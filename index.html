@@ -434,7 +434,19 @@ if (role === 'driver') {
     await renderOperatorActive();
   }
   async function renderOperatorActive() {
-    const { data: logs } = await supabase.from('logs').select('*, drivers(vehicle, profiles(name)), docks(name)').neq('status', 'completed');
+    const { data: logs } = await supabase
+  .from('logs')
+  .select(`
+    *,
+    drivers(
+      vehicle,
+      profiles!drivers_user_id_fkey(
+        name
+      )
+    ),
+    docks(name)
+  `)
+  .neq('status', 'completed');
     const tbody = document.getElementById('operator-active-tbody');
     if (!logs || !logs.length) { tbody.innerHTML = '<tr><td colspan="5" class="no-data">Aucun camion actif</td></tr>'; return; }
     tbody.innerHTML = logs.map(l => `<tr><td>${l.drivers?.profiles?.name || '—'}</td><td>${l.drivers?.vehicle || '—'}</td><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${badgeHtml(l.status)}</td></tr>`).join('');
@@ -473,7 +485,18 @@ if (role === 'driver') {
   async function submitManualQR() { const val = document.getElementById('manual-qr-input').value.trim(); if (!val) { showToast('Entrez un code QR', true); return; } await processQR(val); closeScanner(); }
   async function processQR(code) {
     if (scanTarget === 'driver-qr') {
-      const { data: driver } = await supabase.from('drivers').select('*, profiles(name)').eq('qr_code', code).single();
+      const { data: driver } = await supabase
+  .from('drivers')
+  .select(`
+    *,
+    profiles!drivers_user_id_fkey(
+      name,
+      email,
+      phone
+    )
+  `)
+  .eq('qr_code', code)
+  .single();
       if (!driver) { showToast('QR chauffeur non reconnu', true); return; }
       scannedDriverObj = driver;
       showToast('Chauffeur identifié : ' + driver.profiles?.name);
@@ -504,7 +527,19 @@ if (role === 'driver') {
       <div class="stat-card"><div class="stat-val">${fmtDur(avgDur)}</div><div class="stat-label">Durée moyenne</div></div>
       <div class="stat-card"><div class="stat-val green">${logs?.length||0}</div><div class="stat-label">Total passages</div></div>
     `;
-    const { data: activeLogs } = await supabase.from('logs').select('*, drivers(vehicle, profiles(name)), docks(name)').neq('status', 'completed');
+   const { data: activeLogs } = await supabase
+  .from('logs')
+  .select(`
+    *,
+    drivers(
+      vehicle,
+      profiles!drivers_user_id_fkey(
+        name
+      )
+    ),
+    docks(name)
+  `)
+  .neq('status', 'completed');
     const tbody = document.getElementById('admin-active-tbody');
     if (!activeLogs || !activeLogs.length) { tbody.innerHTML = '<tr><td colspan="6" class="no-data">Aucun camion actif</td></tr>'; return; }
     tbody.innerHTML = activeLogs.map(l => {
@@ -516,7 +551,19 @@ if (role === 'driver') {
     const search = (document.getElementById('filter-search')?.value || '').toLowerCase();
     const status = document.getElementById('filter-status')?.value || '';
     const date = document.getElementById('filter-date')?.value || '';
-    let query = supabase.from('logs').select('*, drivers(vehicle, profiles(name)), docks(name)').order('entry_time', { ascending: false });
+    let query = supabase
+  .from('logs')
+  .select(`
+    *,
+    drivers(
+      vehicle,
+      profiles!drivers_user_id_fkey(
+        name
+      )
+    ),
+    docks(name)
+  `)
+  .order('entry_time', { ascending: false });
     const { data: logs } = await query;
     let filtered = logs || [];
     if (status) filtered = filtered.filter(l => l.status === status);
@@ -527,7 +574,19 @@ if (role === 'driver') {
     tbody.innerHTML = filtered.map(l => `<tr><td>${l.drivers?.profiles?.name || '—'}</td><td>${l.drivers?.vehicle || '—'}</td><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.duration)}</td><td>${badgeHtml(l.status)}</td></tr>`).join('');
   }
   async function exportCSV() {
-    const { data: logs } = await supabase.from('logs').select('*, drivers(vehicle, profiles(name)), docks(name)');
+    const { data: logs } = await supabase
+  .from('logs')
+  .select(`
+    entry_time,
+    exit_time,
+    duration,
+    status,
+    drivers(
+      vehicle,
+      profiles!drivers_user_id_fkey(name)
+    ),
+    docks(name)
+  `);
     const rows = [['Chauffeur','Véhicule','Dock','Entrée','Sortie','Durée (min)','Statut']];
     logs?.forEach(l => rows.push([l.drivers?.profiles?.name || '', l.drivers?.vehicle || '', l.docks?.name || '', fmtTime(l.entry_time), fmtTime(l.exit_time), l.duration || '', l.status]));
     const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
@@ -535,7 +594,16 @@ if (role === 'driver') {
     showToast('Export CSV téléchargé');
   }
   async function renderAdminDrivers() {
-    const { data: drivers } = await supabase.from('drivers').select('*, profiles(name, email, phone)');
+    const { data: drivers } = await supabase
+  .from('drivers')
+  .select(`
+    *,
+    profiles!drivers_user_id_fkey(
+      name,
+      email,
+      phone
+    )
+  `);
     const tbody = document.getElementById('admin-drivers-tbody');
     if (!drivers || !drivers.length) { tbody.innerHTML = '<tr><td colspan="6" class="no-data">Aucun chauffeur</td></tr>'; return; }
     tbody.innerHTML = drivers.map(d => `<tr><td>${d.profiles?.name || '—'}</td><td>${d.profiles?.email || '—'}</td><td>${d.profiles?.phone || '—'}</td><td>${d.vehicle}</td><td>${badgeHtml(d.status)}</td><td><button class="btn sm secondary" onclick="showQRView('${d.qr_code}','QR — ${d.profiles?.name || d.vehicle}')">Voir QR</button></td></tr>`).join('');
