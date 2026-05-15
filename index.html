@@ -280,7 +280,7 @@
     if (password.length < 6) { showMsg('reg-msg', 'Mot de passe trop court (min 6).', 'error'); return; }
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password, options: { data: { name, phone, role } } });
     if (signUpError) { showMsg('reg-msg', signUpError.message, 'error'); return; }
-    if (profileError) console.error(profileError);
+    
     // ================= DRIVER DATA =================
 if (role === 'driver') {
 
