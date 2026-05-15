@@ -282,11 +282,31 @@
     if (signUpError) { showMsg('reg-msg', signUpError.message, 'error'); return; }
     const { error: profileError } = await supabase.from('profiles').insert([{ id: signUpData.user.id, name, phone, role }]);
     if (profileError) console.error(profileError);
-    if (role === 'driver') {
-      const veh = vehicle || 'N/A';
-      const qrCode = `DRV:${signUpData.user.id}:${veh}`;
-      await supabase.from('drivers').insert([{ user_id: signUpData.user.id, vehicle: veh, qr_code: qrCode }]);
-    }
+    // ================= DRIVER DATA =================
+if (role === 'driver') {
+
+  const veh = vehicle || 'N/A';
+
+  // QR unique du chauffeur
+  const qrCode = `DRIVER-${signUpData.user.id}-${Date.now()}`;
+
+  // insertion dans la table drivers
+  const { error: driverError } = await supabase
+    .from('drivers')
+    .insert([
+      {
+        user_id: signUpData.user.id,
+        vehicle: veh,
+        qr_code: qrCode
+      }
+    ]);
+
+  if (driverError) {
+    console.error(driverError);
+    showMsg('reg-msg', driverError.message, 'error');
+    return;
+  }
+}
     showMsg('reg-msg', 'Compte créé ! Connectez-vous.', 'success');
     setTimeout(() => { switchAuthTab('login'); }, 1500);
   }
