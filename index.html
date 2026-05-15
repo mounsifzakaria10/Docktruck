@@ -294,15 +294,15 @@ if (role === 'driver') {
 
   // insertion dans la table drivers
   const { error: driverError } = await supabase
-    .from('drivers')
-    .insert([
-      {
-        user_id: signUpData.user.id,
-        vehicle: veh,
-        qr_code: qrCode
-      }
-    ]);
-
+  .from('drivers')
+  .insert([
+    {
+      user_id: signUpData.user.id,
+      vehicle: veh,
+      qr_code: qrCode,
+      status: 'waiting'
+    }
+  ]);
   if (driverError) {
     console.error(driverError);
     showMsg('reg-msg', driverError.message, 'error');
