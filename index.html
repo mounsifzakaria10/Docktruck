@@ -248,7 +248,51 @@
   // ==================== SUPABASE CLIENT ====================
   const SUPABASE_URL = 'https://ivfoeoxhbzvuvtlmbgwi.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2Zm9lb3hoYnp2dXZ0bG1iZ3dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTQ0NjcsImV4cCI6MjA5NDMzMDQ2N30.eWiSABzSQuwfE2EkcRPVr27R0jxQfTnBDbODjNfs6sQ';
+  
+  // Remplacez TOUT le bloc <script> actuel par ceci :
+document.addEventListener('DOMContentLoaded', async () => {
+
+  const SUPABASE_URL = 'https://ivfoeoxhbzvuvtlmbgwi.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2Zm9lb3hoYnp2dXZ0bG1iZ3dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTQ0NjcsImV4cCI6MjA5NDMzMDQ2N30.eWiSABzSQuwfE2EkcRPVr27R0jxQfTnBDbODjNfs6sQ';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let currentProfile = null;
+  let currentDriver = null;
+
+  // ... tout le reste de votre code JS ici ...
+
+  // ET exposer les fonctions appelées depuis le HTML via onclick
+  window.doLogin = doLogin;
+  window.doRegister = doRegister;
+  window.doLogout = doLogout;
+  window.quickLogin = quickLogin;
+  window.switchAuthTab = switchAuthTab;
+  window.goTo = goTo;
+  window.toggleSidebar = toggleSidebar;
+  window.closeSidebar = closeSidebar;
+  window.openScanner = openScanner;
+  window.closeScanner = closeScanner;
+  window.submitManualQR = submitManualQR;
+  window.resetScan = resetScan;
+  window.recordEntry = recordEntry;
+  window.recordExit = recordExit;
+  window.addDock = addDock;
+  window.downloadQR = downloadQR;
+  window.showQRView = showQRView;
+  window.closeQRView = closeQRView;
+  window.exportCSV = exportCSV;
+  window.renderAdminLogs = renderAdminLogs;
+
+  // Vérifier session existante
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) loadUserData(session.user);
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session) loadUserData(session.user);
+  });
+
+});
 
   let currentUser = null;
   let currentProfile = null;
