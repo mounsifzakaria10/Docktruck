@@ -272,17 +272,46 @@
     await loadUserData(data.user);
   }
   async function quickLogin(email, pwd) { document.getElementById('login-email').value = email; document.getElementById('login-pass').value = pwd; doLogin(); }
-  async function doRegister() {
+ async function doRegister() {
     const name = document.getElementById('reg-name').value.trim();
     const email = document.getElementById('reg-email').value.trim();
     const phone = document.getElementById('reg-phone').value.trim();
     const password = document.getElementById('reg-pass').value;
     const role = document.getElementById('reg-role').value;
     const vehicle = document.getElementById('reg-vehicle').value.trim();
+    
     if (!name || !email || !password) { showMsg('reg-msg', 'Remplissez tous les champs obligatoires.', 'error'); return; }
     if (password.length < 6) { showMsg('reg-msg', 'Mot de passe trop court (min 6).', 'error'); return; }
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password, options: { data: { name, phone, role } } });
+    
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ 
+        email, password, options: { data: { name, phone, role } } 
+    });
     if (signUpError) { showMsg('reg-msg', signUpError.message, 'error'); return; }
+
+    // ✅ NOUVEAU : attendre que le trigger SQL crée le profil
+    if (role === 'driver') {
+        showMsg('reg-msg', 'Création du compte...', 'success');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        const qrCode = `DRIVER-${signUpData.user.id}-${Date.now()}`;
+        const { error: driverError } = await supabase
+            .from('drivers')
+            .insert([{
+                user_id: signUpData.user.id,
+                vehicle: vehicle || 'N/A',
+                qr_code: qrCode,
+                status: 'waiting'
+            }]);
+
+        if (driverError) { 
+            showMsg('reg-msg', driverError.message, 'error'); 
+            return; 
+        }
+    }
+
+    showMsg('reg-msg', 'Compte créé ! Connectez-vous.', 'success');
+    setTimeout(() => switchAuthTab('login'), 1500);
+}
     
     // ================= DRIVER DATA =================
 if (role === 'driver') {
