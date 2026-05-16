@@ -396,15 +396,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
  
   // ==================== AUTH ====================
-  async function doLogin() {
-    const email    = document.getElementById('login-email').value.trim();
-    const password = document.getElementById('login-pass').value;
-    if (!email || !password) { showMsg('login-msg', 'Remplissez email et mot de passe.', 'error'); return; }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { showMsg('login-msg', error.message, 'error'); return; }
-    await loadUserData(data.user);
+ async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-pass').value;
+
+  if (!email || !password) { 
+    showMsg('login-msg', 'Remplissez email et mot de passe.', 'error'); 
+    return; 
   }
- 
+
+  showMsg('login-msg', 'Connexion en cours...', 'success');
+
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) { 
+      showMsg('login-msg', error.message, 'error'); 
+      return; 
+    }
+
+    if (!data.user) { 
+      showMsg('login-msg', 'Utilisateur introuvable.', 'error'); 
+      return; 
+    }
+
+    await loadUserData(data.user);
+
+  } catch(err) {
+    showMsg('login-msg', 'Erreur : ' + err.message, 'error');
+  }
+}
   async function quickLogin(email, pwd) {
     document.getElementById('login-email').value = email;
     document.getElementById('login-pass').value  = pwd;
