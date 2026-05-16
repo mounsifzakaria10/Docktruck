@@ -433,75 +433,83 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
  
   async function doRegister() {
-    const name     = document.getElementById('reg-name').value.trim();
-    const email    = document.getElementById('reg-email').value.trim();
-    const phone    = document.getElementById('reg-phone').value.trim();
-    const password = document.getElementById('reg-pass').value;
-    const role     = document.getElementById('reg-role').value;
-    const vehicle  = document.getElementById('reg-vehicle').value.trim();
- 
-    if (!name || !email || !password) { showMsg('reg-msg', 'Remplissez tous les champs obligatoires.', 'error'); return; }
-    if (password.length < 6)          { showMsg('reg-msg', 'Mot de passe trop court (min 6).', 'error'); return; }
- 
-    showMsg('reg-msg', 'Création du compte...', 'success');
- 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-      email, password, options: { data: { name, phone, role } }
-    });
- 
-    if (signUpError) { showMsg('reg-msg', signUpError.message, 'error'); return; }
- 
-    // Si email confirmation activée, user peut être null
-    if (!signUpData.user) {
-      showMsg('reg-msg', 'Vérifiez votre email pour confirmer le compte puis connectez-vous.', 'success');
-      return;
-    }
- 
-    if (role === 'driver') {
-      showMsg('reg-msg', 'Configuration du profil chauffeur...', 'success');
-      // ✅ Attendre que le trigger SQL crée le profil dans public.profiles
-      await new Promise(resolve => setTimeout(resolve, 1500));
- 
-      const qrCode = `DRIVER-${signUpData.user.id}-${Date.now()}`;
-      const { error: driverError } = await supabase.from('drivers').insert([{
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const phone    = document.getElementById('reg-phone').value.trim();
+  const password = document.getElementById('reg-pass').value;
+  const role     = document.getElementById('reg-role').value;
+  const vehicle  = document.getElementById('reg-vehicle').value.trim();
+
+  if (!name || !email || !password) { showMsg('reg-msg', 'Remplissez tous les champs obligatoires.', 'error'); return; }
+  if (password.length < 6)          { showMsg('reg-msg', 'Mot de passe trop court (min 6).', 'error'); return; }
+
+  showMsg('reg-msg', 'Création du compte...', 'success');
+
+  // ÉTAPE 1 : Créer le compte auth
+  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    email, password, options: { data: { name, phone, role } }
+  });
+
+  if (signUpError) { showMsg('reg-msg', signUpError.message, 'error'); return; }
+  if (!signUpData.user) { showMsg('reg-msg', 'Vérifiez votre email pour confirmer.', 'success'); return; }
+
+  showMsg('reg-msg', 'Création du profil...', 'success');
+
+  // ÉTAPE 2 : Créer le profil MANUELLEMENT (sans trigger)
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .insert([{
+      id:    signUpData.user.id,
+      name:  name,
+      email: email,
+      phone: phone || null,
+      role:  role
+    }]);
+
+  if (profileError) { 
+    showMsg('reg-msg', 'Erreur profil : ' + profileError.message, 'error'); 
+    return; 
+  }
+
+  // ÉTAPE 3 : Si chauffeur, créer le driver
+  if (role === 'driver') {
+    showMsg('reg-msg', 'Configuration chauffeur...', 'success');
+
+    const qrCode = `DRIVER-${signUpData.user.id}-${Date.now()}`;
+    const { error: driverError } = await supabase
+      .from('drivers')
+      .insert([{
         user_id: signUpData.user.id,
         vehicle: vehicle || 'N/A',
         qr_code: qrCode,
         status:  'waiting'
       }]);
- 
-      if (driverError) {
-        showMsg('reg-msg', 'Erreur profil chauffeur : ' + driverError.message, 'error');
-        return;
-      }
+
+    if (driverError) { 
+      showMsg('reg-msg', 'Erreur chauffeur : ' + driverError.message, 'error'); 
+      return; 
     }
- 
-    showMsg('reg-msg', 'Compte créé ! Connectez-vous.', 'success');
-    setTimeout(() => switchAuthTab('login'), 1500);
   }
+
+  showMsg('reg-msg', 'Compte créé ! Connectez-vous.', 'success');
+  setTimeout(() => switchAuthTab('login'), 1500);
+}
  
- async function loadUserData(user, attempts = 0) {
+ async function loadUserData(user) {
   if (!user) return;
   currentUser = user;
 
-  // ✅ Maximum 5 tentatives (5 secondes)
-  if (attempts >= 5) {
-    showMsg('login-msg', 'Profil introuvable. Contactez l\'administrateur.', 'error');
-    await supabase.auth.signOut();
-    currentUser = null;
-    return;
-  }
-
-  const { data: profile, error } = await supabase
+  const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single();
 
   if (!profile) {
-    // Retry après 1 seconde
-    await new Promise(r => setTimeout(r, 1000));
-    return loadUserData(user, attempts + 1);
+    showMsg('login-msg', 'Profil introuvable. Recréez votre compte.', 'error');
+    await supabase.auth.signOut();
+    currentUser = null;
+    return;
   }
 
   currentProfile = profile;
@@ -515,9 +523,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentDriver = driver;
   }
 
-  // Cacher le message de connexion
   showMsg('login-msg', '', '');
-
   document.getElementById('login-screen').classList.remove('active');
   document.getElementById('app-screen').classList.add('active');
   setupNav();
