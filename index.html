@@ -344,16 +344,28 @@ if (role === 'driver') {
   async function loadUserData(user) {
     if (!user) return;
     currentUser = user;
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    currentProfile = profile;
-    if (profile && profile.role === 'driver') {
-      const { data: driver } = await supabase.from('drivers').select('*').eq('user_id', user.id).single();
-      currentDriver = driver;
+
+    const { data: profile } = await supabase
+        .from('profiles').select('*').eq('id', user.id).single();
+
+    // ✅ Retry si le trigger n'a pas encore créé le profil
+    if (!profile) {
+        await new Promise(r => setTimeout(r, 1000));
+        return loadUserData(user);
     }
+
+    currentProfile = profile;
+
+    if (profile.role === 'driver') {
+        const { data: driver } = await supabase
+            .from('drivers').select('*').eq('user_id', user.id).single();
+        currentDriver = driver;
+    }
+
     document.getElementById('login-screen').classList.remove('active');
     document.getElementById('app-screen').classList.add('active');
     setupNav();
-  }
+}
   async function doLogout() { await supabase.auth.signOut(); currentUser = null; currentProfile = null; currentDriver = null; document.getElementById('app-screen').classList.remove('active'); document.getElementById('login-screen').classList.add('active'); showToast('Déconnecté'); }
   supabase.auth.getSession().then(({ data: { session } }) => { if (session) loadUserData(session.user); });
   supabase.auth.onAuthStateChange((_event, session) => { if (session) loadUserData(session.user); else if (!session && currentUser) doLogout(); });
