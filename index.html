@@ -422,7 +422,7 @@
       <img id="qr-view-img" src="" alt="QR Code" style="width:220px;height:220px;border-radius:8px;display:block;margin:0 auto;">
       <div class="qr-id" id="qr-view-id"></div>
     </div>
-    <button class="btn sm" style="margin-top:1rem;" onclick="downloadQR('qr-view-canvas','qr-code')">Télécharger</button>
+    <button class="btn sm" style="margin-top:1rem;" onclick="downloadQRById()">Télécharger</button>
     <button class="btn sm secondary" style="margin-top:0.5rem;" onclick="closeQRView()">Fermer</button>
   </div>
 </div>
@@ -474,44 +474,62 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `<span class="badge ${status}">${map[status] || status}</span>`;
   }
 
-  // ✅ Génère QR via Google Charts API — image PNG directe, fond blanc, modules noirs
-  function generateQR(canvas, text, size = 180) {
-    if (!canvas || !text) return;
-    const url = `https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encodeURIComponent(text)}&choe=UTF-8&chld=H|1`;
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => {
-      canvas.width  = size;
-      canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      // Fond blanc
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, size, size);
-      ctx.drawImage(img, 0, 0, size, size);
-    };
-    img.src = url;
+  // ✅ Génère QR via qrcode.js en DataURL puis injecte dans un <img> ou <canvas>
+  function generateQR(targetEl, text, size = 180) {
+    if (!targetEl || !text || !window.QRCode) return;
+    QRCode.toDataURL(text, {
+      width: size,
+      margin: 3,
+      color: { dark: '#000000', light: '#ffffff' },
+      errorCorrectionLevel: 'H'
+    }, (err, url) => {
+      if (err) { console.warn('QR error:', err); return; }
+      if (targetEl.tagName === 'IMG') {
+        targetEl.src = url;
+      } else if (targetEl.tagName === 'CANVAS') {
+        const img = new Image();
+        img.onload = () => {
+          targetEl.width  = size;
+          targetEl.height = size;
+          targetEl.getContext('2d').drawImage(img, 0, 0);
+        };
+        img.src = url;
+      }
+    });
   }
 
-  // ✅ Retourne directement l URL image Google Charts (pour img tag)
-  function getQRUrl(text, size = 180) {
-    return `https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encodeURIComponent(text)}&choe=UTF-8&chld=H|1`;
+  // ✅ Retourne une Promise<dataURL> pour usage dans downloadDriverCard
+  function getQRDataUrl(text, size = 240) {
+    return new Promise((resolve, reject) => {
+      if (!window.QRCode) { reject('QRCode not loaded'); return; }
+      QRCode.toDataURL(text, {
+        width: size,
+        margin: 3,
+        color: { dark: '#000000', light: '#ffffff' },
+        errorCorrectionLevel: 'H'
+      }, (err, url) => {
+        if (err) reject(err);
+        else resolve(url);
+      });
+    });
   }
 
-  function downloadQR(qrCodeOrCanvasId, filename) {
-    // Supporte soit un qr_code string, soit un ancien canvas id (fallback)
-    let url;
-    const el = document.getElementById(qrCodeOrCanvasId);
-    if (el && el.tagName === 'IMG') {
-      url = el.src;
-    } else {
-      // qrCodeOrCanvasId est directement le texte du QR
-      url = getQRUrl(qrCodeOrCanvasId, 400);
-    }
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename + '.png';
-    link.target = '_blank';
-    link.click();
+    // ✅ Télécharger QR depuis un texte
+  async function downloadQR(qrText, filename) {
+    try {
+      const url = await getQRDataUrl(qrText, 400);
+      const link = document.createElement('a');
+      link.href = url; link.download = (filename || 'qr-code') + '.png'; link.click();
+      showToast('QR téléchargé');
+    } catch(e) { showToast('Erreur téléchargement QR', true); }
+  }
+
+  // ✅ Télécharger QR depuis le modal (utilise le texte affiché)
+  async function downloadQRById() {
+    const qrText = document.getElementById('qr-view-id')?.textContent;
+    const title  = document.getElementById('qr-view-title')?.textContent || 'qr-code';
+    if (!qrText) return;
+    await downloadQR(qrText, title.replace(/[^a-zA-Z0-9-_]/g, '-'));
   }
 
   // ==================== AUTH ====================
@@ -698,9 +716,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Remplir la carte QR photo
     if (document.getElementById('qr-card-name'))    document.getElementById('qr-card-name').textContent    = u.name;
     if (document.getElementById('qr-card-vehicle')) document.getElementById('qr-card-vehicle').textContent = '🚛 ' + d.vehicle;
-    // ✅ Google Charts API — image QR directe fond blanc
+    // ✅ qrcode.js DataURL — fond blanc garanti, pas de CORS
     const qrImg = document.getElementById('driver-qr-img');
-    if (qrImg) qrImg.src = getQRUrl(d.qr_code, 200);
+    if (qrImg) generateQR(qrImg, d.qr_code, 200);
     document.getElementById('driver-qr-label').textContent = d.qr_code;
 
     const { data: logs } = await supabase.from('logs').select('*, docks(name)').eq('driver_id', d.id);
@@ -711,53 +729,80 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ========== TÉLÉCHARGER LA CARTE QR COMME IMAGE ==========
-  function downloadDriverCard() {
+  async function downloadDriverCard() {
     if (!currentDriver) return;
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width  = 420;
-    finalCanvas.height = 560;
-    const ctx = finalCanvas.getContext('2d');
-    const grad = ctx.createLinearGradient(0, 0, 420, 560);
-    grad.addColorStop(0, '#0d1f14'); grad.addColorStop(0.5, '#0a1628'); grad.addColorStop(1, '#0d1f14');
-    ctx.fillStyle = grad;
-    ctx.beginPath(); ctx.roundRect(0, 0, 420, 560, 20); ctx.fill();
-    ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.roundRect(1, 1, 418, 558, 20); ctx.stroke();
-    ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 26px sans-serif'; ctx.fillText('Ware', 30, 58);
-    ctx.fillStyle = '#00e5a0'; ctx.fillText('Track', 103, 58);
-    ctx.fillStyle = '#00e5a0'; ctx.beginPath(); ctx.roundRect(300, 36, 90, 24, 5); ctx.fill();
-    ctx.fillStyle = '#000000'; ctx.font = 'bold 11px sans-serif'; ctx.fillText('CHAUFFEUR', 306, 53);
-    ctx.strokeStyle = 'rgba(0,229,160,0.2)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(30, 75); ctx.lineTo(390, 75); ctx.stroke();
-    ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 24px sans-serif';
-    ctx.fillText(currentProfile?.name || '-', 30, 115);
-    ctx.fillStyle = '#6b7491'; ctx.font = '15px sans-serif';
-    ctx.fillText('Vehicule : ' + (currentDriver?.vehicle || '-'), 30, 145);
-    const qrSize = 240, qrX = 90, qrY = 175;
-    const qrImage = new Image();
-    qrImage.crossOrigin = 'anonymous';
-    qrImage.onload = () => {
+    showToast('Génération de la carte...');
+    try {
+      // ✅ qrcode.js DataURL — pas de CORS
+      const qrDataUrl = await getQRDataUrl(currentDriver.qr_code, 260);
+      const finalCanvas = document.createElement('canvas');
+      finalCanvas.width  = 420;
+      finalCanvas.height = 580;
+      const ctx = finalCanvas.getContext('2d');
+
+      // Fond dégradé sombre
+      const grad = ctx.createLinearGradient(0, 0, 420, 580);
+      grad.addColorStop(0, '#0d1f14'); grad.addColorStop(0.5, '#0a1628'); grad.addColorStop(1, '#0d1f14');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.roundRect(0, 0, 420, 580, 20); ctx.fill();
+
+      // Bordure verte
+      ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(1, 1, 418, 578, 20); ctx.stroke();
+
+      // Logo
+      ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 26px sans-serif'; ctx.fillText('Ware', 30, 58);
+      ctx.fillStyle = '#00e5a0'; ctx.fillText('Track', 103, 58);
+
+      // Badge
+      ctx.fillStyle = '#00e5a0'; ctx.beginPath(); ctx.roundRect(300, 36, 90, 24, 5); ctx.fill();
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 11px sans-serif'; ctx.fillText('CHAUFFEUR', 306, 53);
+
+      // Séparateur
+      ctx.strokeStyle = 'rgba(0,229,160,0.2)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(30, 75); ctx.lineTo(390, 75); ctx.stroke();
+
+      // Nom et véhicule
+      ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 24px sans-serif';
+      ctx.fillText(currentProfile?.name || '-', 30, 115);
+      ctx.fillStyle = '#6b7491'; ctx.font = '15px sans-serif';
+      ctx.fillText('Vehicule : ' + (currentDriver?.vehicle || '-'), 30, 145);
+
+      // QR Image (DataURL — pas de CORS)
+      const qrImg = new Image();
+      await new Promise((resolve) => {
+        qrImg.onload = resolve;
+        qrImg.src = qrDataUrl;
+      });
+      const qrSize = 260, qrX = 80, qrY = 175;
+      // Fond blanc arrondi pour le QR
       ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.roundRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 12); ctx.fill();
-      ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+      ctx.beginPath(); ctx.roundRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 14); ctx.fill();
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+      // Code
       ctx.fillStyle = '#6b7491'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
       const code = currentDriver.qr_code || '';
-      ctx.fillText(code.length > 50 ? code.slice(0,50)+'...' : code, 210, 445);
-      ctx.strokeStyle = 'rgba(42,48,69,0.6)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(30, 465); ctx.lineTo(390, 465); ctx.stroke();
-      ctx.fillStyle = 'rgba(107,116,145,0.7)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText("Presentez cette carte a l operateur du dock", 210, 495);
+      ctx.fillText(code.length > 52 ? code.slice(0, 52) + '...' : code, 210, 465);
+
+      // Footer
+      ctx.strokeStyle = 'rgba(42,48,69,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(30, 485); ctx.lineTo(390, 485); ctx.stroke();
+      ctx.fillStyle = 'rgba(107,116,145,0.8)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText("Presentez cette carte a l operateur du dock", 210, 510);
       ctx.font = '10px sans-serif';
-      ctx.fillText('WareTrack - Systeme de suivi des camions', 210, 520);
+      ctx.fillText('WareTrack — Systeme de suivi des camions', 210, 535);
       ctx.textAlign = 'left';
+
       const link = document.createElement('a');
       link.download = 'carte-' + (currentDriver.vehicle || 'chauffeur') + '.png';
       link.href = finalCanvas.toDataURL('image/png');
       link.click();
-      showToast('Carte telechargee');
-    };
-    qrImage.onerror = () => showToast('Erreur QR', true);
-    qrImage.src = getQRUrl(currentDriver.qr_code, qrSize);
+      showToast('Carte téléchargée ✅');
+    } catch(e) {
+      console.error(e);
+      showToast('Erreur génération carte', true);
+    }
   }
 
     // ========== DRIVER : SCANNER UN DOCK ==========
@@ -931,9 +976,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     for (const dk of docks) {
       const wrap = document.createElement('div'); wrap.className = 'qr-wrapper'; wrap.style.cssText = 'min-width:160px;max-width:200px;';
       const img = document.createElement('img');
-      img.src = getQRUrl(dk.qr_code, 140);
       img.alt = dk.name;
       img.style.cssText = 'width:140px;height:140px;border-radius:6px;display:block;';
+      generateQR(img, dk.qr_code, 140);
       const lbl = document.createElement('div'); lbl.className = 'qr-id'; lbl.textContent = dk.name;
       wrap.appendChild(img); wrap.appendChild(lbl); container.appendChild(wrap);
     }
@@ -1085,18 +1130,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     for (const dk of docks) {
       const wrap  = document.createElement('div'); wrap.className = 'card'; wrap.style.cssText = 'min-width:200px;max-width:240px;text-align:center;';
       const img   = document.createElement('img');
-      img.src = getQRUrl(dk.qr_code, 150);
       img.alt = dk.name;
       img.style.cssText = 'width:150px;height:150px;border-radius:6px;display:block;margin:0 auto 0.5rem;';
+      generateQR(img, dk.qr_code, 150);
       const nm    = document.createElement('div'); nm.style.cssText = 'font-size:0.8rem;font-weight:500;margin-bottom:0.5rem;'; nm.textContent = dk.name;
       const id    = document.createElement('div'); id.className = 'qr-id'; id.textContent = dk.qr_code;
       const dlBtn = document.createElement('button'); dlBtn.className = 'btn sm'; dlBtn.textContent = 'Télécharger'; dlBtn.style.marginTop = '0.75rem';
       dlBtn.onclick = () => {
-        const link = document.createElement('a');
-        link.href = getQRUrl(dk.qr_code, 300);
-        link.download = dk.name + '.png';
-        link.target = '_blank';
-        link.click();
+        getQRDataUrl(dk.qr_code, 400).then(url => {
+          const link = document.createElement('a');
+          link.href = url; link.download = dk.name + '.png'; link.click();
+        });
       };
       wrap.appendChild(nm); wrap.appendChild(img); wrap.appendChild(id); wrap.appendChild(dlBtn);
       grid.appendChild(wrap);
@@ -1118,9 +1162,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('qr-view-title').textContent = title;
     document.getElementById('qr-view-id').textContent    = qrCode;
     document.getElementById('qr-view-modal').classList.add('open');
-    // ✅ Google Charts API
+    // ✅ qrcode.js DataURL
     const img = document.getElementById('qr-view-img');
-    if (img) img.src = getQRUrl(qrCode, 220);
+    if (img) generateQR(img, qrCode, 220);
   }
 
   function closeQRView() { document.getElementById('qr-view-modal').classList.remove('open'); }
@@ -1156,6 +1200,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.exportCSV          = exportCSV;
   window.renderAdminLogs    = renderAdminLogs;
   window.downloadDriverCard = downloadDriverCard;
+  window.downloadQRById     = downloadQRById;
   window.openDriverScanner  = openDriverScanner;
   window.driverSubmitManual = driverSubmitManual;
   window.driverRecordEntry  = driverRecordEntry;
