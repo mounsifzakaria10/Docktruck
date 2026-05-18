@@ -155,10 +155,47 @@
   .page.active { animation: fadeIn 0.25s ease; }
   .nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
   .nav-backdrop.open { display: block; }
+
+  /* ========== QR CARD PHOTO ========== */
+  .qr-card-photo { display: flex; justify-content: center; margin: 0.5rem 0; }
+  .qr-card-inner {
+    width: 320px;
+    background: linear-gradient(135deg, #0d1f14 0%, #0a1628 50%, #0d1f14 100%);
+    border: 1px solid var(--accent);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 0 40px rgba(0,229,160,0.15), 0 0 0 1px rgba(0,229,160,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .qr-card-inner::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(0,229,160,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .qr-card-inner::after {
+    content: '';
+    position: absolute; bottom: -40px; left: -40px;
+    width: 140px; height: 140px;
+    background: radial-gradient(circle, rgba(0,102,255,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .qr-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+  .qr-card-logo { font-family: var(--font-head); font-size: 1rem; font-weight: 800; color: var(--text); letter-spacing: -0.5px; }
+  .qr-card-logo span { color: var(--accent); }
+  .qr-card-badge { font-size: 0.6rem; font-weight: 600; letter-spacing: 0.12em; color: #000; background: var(--accent); padding: 0.2rem 0.5rem; border-radius: 4px; }
+  .qr-card-name { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; color: var(--text); margin-bottom: 0.2rem; }
+  .qr-card-vehicle { font-size: 0.72rem; color: var(--muted); margin-bottom: 1.25rem; letter-spacing: 0.05em; }
+  .qr-card-qr { display: flex; justify-content: center; margin-bottom: 0.75rem; }
+  .qr-card-qr canvas { border-radius: 10px; border: 3px solid rgba(0,229,160,0.3); }
+  .qr-card-code { text-align: center; font-size: 0.6rem; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 1rem; word-break: break-all; }
+  .qr-card-footer { text-align: center; font-size: 0.65rem; color: rgba(107,116,145,0.7); border-top: 1px solid rgba(42,48,69,0.5); padding-top: 0.75rem; }
 </style>
 </head>
 <body>
- 
+
 <!-- ==================== LOGIN SCREEN ==================== -->
 <div id="login-screen" class="screen active">
   <div class="login-box">
@@ -194,7 +231,7 @@
     </div>
   </div>
 </div>
- 
+
 <!-- ==================== APP SCREEN ==================== -->
 <div id="app-screen" class="screen">
   <button class="hamburger" onclick="toggleSidebar()">
@@ -215,22 +252,81 @@
       </div>
     </nav>
     <main class="main-content">
- 
+
       <!-- DRIVER PAGES -->
       <div id="page-driver-profile" class="page">
         <div class="page-title">Mon profil</div>
         <div class="page-sub">Vos informations et votre QR code personnel</div>
-        <div class="card"><div class="profile-header" id="driver-profile-header"></div><div class="info-grid" id="driver-info-grid"></div></div>
-        <div class="card"><div class="card-title">Mon QR Code personnel</div><div class="qr-wrapper"><canvas id="driver-qr-canvas"></canvas><div class="qr-id" id="driver-qr-label"></div><button class="btn sm" style="width:auto" onclick="downloadQR('driver-qr-canvas','mon-qr-chauffeur')">Télécharger le QR</button></div><div style="font-size:0.72rem; color:var(--muted); margin-top:1rem; line-height:1.6;">Présentez ce QR code à l'opérateur lors de votre arrivée au dock.</div></div>
-        <div class="card"><div class="card-title">Statut actuel</div><div id="driver-status-display" style="font-size:1rem; padding:0.5rem 0;"></div></div>
+
+        <!-- Infos profil -->
+        <div class="card">
+          <div class="profile-header" id="driver-profile-header"></div>
+          <div class="info-grid" id="driver-info-grid"></div>
+        </div>
+
+        <!-- QR Code sous forme de carte photo -->
+        <div class="card">
+          <div class="card-title">Mon QR Code personnel</div>
+          <div class="qr-card-photo">
+            <div class="qr-card-inner">
+              <div class="qr-card-header">
+                <div class="qr-card-logo">Ware<span>Track</span></div>
+                <div class="qr-card-badge">CHAUFFEUR</div>
+              </div>
+              <div class="qr-card-name" id="qr-card-name">—</div>
+              <div class="qr-card-vehicle" id="qr-card-vehicle">—</div>
+              <div class="qr-card-qr">
+                <canvas id="driver-qr-canvas"></canvas>
+              </div>
+              <div class="qr-card-code" id="driver-qr-label">—</div>
+              <div class="qr-card-footer">Présentez cette carte à l'opérateur du dock</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:0.75rem; margin-top:1.25rem; flex-wrap:wrap;">
+            <button class="btn sm" onclick="downloadDriverCard()">📥 Télécharger la carte</button>
+          </div>
+        </div>
+
+        <!-- Scanner dock depuis le profil chauffeur -->
+        <div class="card">
+          <div class="card-title">📷 Scanner un Dock</div>
+          <div style="font-size:0.78rem; color:var(--muted); margin-bottom:1rem; line-height:1.6;">
+            Scannez le QR code du dock pour enregistrer votre arrivée ou votre départ.
+          </div>
+          <div id="driver-scan-result" style="display:none; padding:1rem; background:var(--surface2); border-radius:8px; border:1px solid var(--accent); margin-bottom:1rem;">
+            <div id="driver-scan-dock-name" style="font-size:0.9rem; font-weight:600; color:var(--accent); margin-bottom:0.5rem;"></div>
+            <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+              <button class="btn sm" onclick="driverRecordEntry()">✅ Enregistrer ENTRÉE</button>
+              <button class="btn sm secondary" onclick="driverRecordExit()">🚪 Enregistrer SORTIE</button>
+              <button class="btn sm warn-btn" onclick="driverResetScan()">Annuler</button>
+            </div>
+          </div>
+          <div style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-bottom:1rem;">
+            <button class="btn sm" onclick="openDriverScanner()">📷 Ouvrir la caméra</button>
+          </div>
+          <div id="driver-qr-reader" style="border-radius:8px; overflow:hidden; display:none;"></div>
+          <div id="driver-scan-manual" style="display:none; margin-top:1rem;">
+            <div class="divider"><span>OU SAISIR MANUELLEMENT</span></div>
+            <div style="display:flex; gap:0.5rem;">
+              <input type="text" id="driver-manual-qr" placeholder="Code QR du dock..." style="flex:1; padding:0.5rem 0.75rem; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-family:var(--font-mono); font-size:0.8rem; outline:none;">
+              <button class="btn sm" onclick="driverSubmitManual()">Valider</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Statut actuel -->
+        <div class="card">
+          <div class="card-title">Statut actuel</div>
+          <div id="driver-status-display" style="font-size:1rem; padding:0.5rem 0;"></div>
+        </div>
       </div>
- 
+
       <div id="page-driver-logs" class="page">
         <div class="page-title">Mes passages</div>
         <div class="page-sub">Historique de vos entrées et sorties</div>
         <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Dock</th><th>Entrée</th><th>Sortie</th><th>Durée</th><th>Statut</th></tr></thead><tbody id="driver-logs-tbody"></tbody></table></div></div>
       </div>
- 
+
       <!-- OPERATOR PAGE -->
       <div id="page-operator-scan" class="page">
         <div class="page-title">Scanner QR Code</div>
@@ -256,7 +352,7 @@
         <div class="card"><div class="card-title">Camions actifs aujourd'hui</div><div class="tbl-wrap"><table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Entrée</th><th>Statut</th></tr></thead><tbody id="operator-active-tbody"></tbody></table></div></div>
         <div class="card"><div class="card-title">QR Codes des docks</div><div id="dock-qr-list" style="display:flex; flex-wrap:wrap; gap:1rem;"></div></div>
       </div>
- 
+
       <!-- ADMIN PAGES -->
       <div id="page-admin-dashboard" class="page">
         <div class="page-title">Dashboard</div>
@@ -264,7 +360,7 @@
         <div class="stats-grid" id="admin-stats-grid"></div>
         <div class="card"><div class="card-title">Camions actifs</div><div class="tbl-wrap"><table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Entrée</th><th>Durée</th><th>Statut</th></tr></thead><tbody id="admin-active-tbody"></tbody></table></div></div>
       </div>
- 
+
       <div id="page-admin-logs" class="page">
         <div class="page-title">Tous les passages</div>
         <div class="page-sub">Historique complet avec filtres et export</div>
@@ -281,13 +377,13 @@
         </div>
         <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Entrée</th><th>Sortie</th><th>Durée</th><th>Statut</th></tr></thead><tbody id="admin-logs-tbody"></tbody></table></div></div>
       </div>
- 
+
       <div id="page-admin-drivers" class="page">
         <div class="page-title">Chauffeurs enregistrés</div>
         <div class="page-sub">Tous les chauffeurs et leurs QR codes</div>
         <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Véhicule</th><th>Statut</th><th>QR</th></tr></thead><tbody id="admin-drivers-tbody"></tbody></table></div></div>
       </div>
- 
+
       <div id="page-admin-docks" class="page">
         <div class="page-title">Gestion des docks</div>
         <div class="page-sub">QR codes des docks de chargement</div>
@@ -300,11 +396,11 @@
         </div>
         <div id="docks-grid" style="display:flex; flex-wrap:wrap; gap:1rem;"></div>
       </div>
- 
+
     </main>
   </div>
 </div>
- 
+
 <!-- ==================== MODALS ==================== -->
 <div class="modal-overlay" id="scanner-modal">
   <div class="modal">
@@ -318,7 +414,7 @@
     </div>
   </div>
 </div>
- 
+
 <div class="modal-overlay" id="qr-view-modal">
   <div class="modal" style="text-align:center;">
     <div class="modal-title" id="qr-view-title">QR Code</div>
@@ -330,54 +426,54 @@
     <button class="btn sm secondary" style="margin-top:0.5rem;" onclick="closeQRView()">Fermer</button>
   </div>
 </div>
- 
+
 <div class="toast" id="toast"></div>
- 
+
 <script>
 // ============================================================
 // TOUT LE JS EST DANS DOMContentLoaded
 // ============================================================
 document.addEventListener('DOMContentLoaded', async () => {
- 
+
   // ==================== SUPABASE ====================
   const SUPABASE_URL = 'https://ivfoeoxhbzvuvtlmbgwi.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2Zm9lb3hoYnp2dXZ0bG1iZ3dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTQ0NjcsImV4cCI6MjA5NDMzMDQ2N30.eWiSABzSQuwfE2EkcRPVr27R0jxQfTnBDbODjNfs6sQ';
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
- 
+
   let currentUser    = null;
   let currentProfile = null;
   let currentDriver  = null;
- 
+
   // ==================== UTILS ====================
   function showMsg(id, txt, type) {
     const el = document.getElementById(id);
     if (el) { el.textContent = txt; el.className = 'msg ' + type; }
   }
- 
+
   function showToast(msg, err = false) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.className = 'toast show' + (err ? ' err' : '');
     setTimeout(() => { t.className = 'toast'; }, 3000);
   }
- 
+
   function fmtTime(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
     return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   }
- 
+
   function fmtDur(min) {
     if (min == null) return '—';
     const h = Math.floor(min / 60), m = min % 60;
     return h ? `${h}h ${m}min` : `${m}min`;
   }
- 
+
   function badgeHtml(status) {
     const map = { waiting: 'En attente', arrived: 'Arrivé', loading: 'En chargement', completed: 'Terminé' };
     return `<span class="badge ${status}">${map[status] || status}</span>`;
   }
- 
+
   function generateQR(canvas, text, size = 180) {
     if (window.QRCode && canvas) {
       QRCode.toCanvas(canvas, text, { width: size, margin: 2, color: { dark: '#000000', light: '#ffffff' } }, (err) => {
@@ -385,7 +481,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     }
   }
- 
+
   function downloadQR(canvasId, filename) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
@@ -394,141 +490,97 @@ document.addEventListener('DOMContentLoaded', async () => {
     link.href = canvas.toDataURL();
     link.click();
   }
- 
+
   // ==================== AUTH ====================
- async function doLogin() {
-  const email    = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-pass').value;
-
-  if (!email || !password) { 
-    showMsg('login-msg', 'Remplissez email et mot de passe.', 'error'); 
-    return; 
-  }
-
-  showMsg('login-msg', 'Connexion en cours...', 'success');
-
-  try {
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-pass').value;
+    if (!email || !password) { showMsg('login-msg', 'Remplissez email et mot de passe.', 'error'); return; }
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    
-    if (error) { 
-      showMsg('login-msg', error.message, 'error'); 
-      return; 
-    }
-
-    if (!data.user) { 
-      showMsg('login-msg', 'Utilisateur introuvable.', 'error'); 
-      return; 
-    }
-
+    if (error) { showMsg('login-msg', error.message, 'error'); return; }
     await loadUserData(data.user);
-
-  } catch(err) {
-    showMsg('login-msg', 'Erreur : ' + err.message, 'error');
   }
-}
+
   async function quickLogin(email, pwd) {
     document.getElementById('login-email').value = email;
     document.getElementById('login-pass').value  = pwd;
     await doLogin();
   }
- 
+
   async function doRegister() {
-  const name     = document.getElementById('reg-name').value.trim();
-  const email    = document.getElementById('reg-email').value.trim();
-  const phone    = document.getElementById('reg-phone').value.trim();
-  const password = document.getElementById('reg-pass').value;
-  const role     = document.getElementById('reg-role').value;
-  const vehicle  = document.getElementById('reg-vehicle').value.trim();
+    const name     = document.getElementById('reg-name').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+    const phone    = document.getElementById('reg-phone').value.trim();
+    const password = document.getElementById('reg-pass').value;
+    const role     = document.getElementById('reg-role').value;
+    const vehicle  = document.getElementById('reg-vehicle').value.trim();
 
-  if (!name || !email || !password) { showMsg('reg-msg', 'Remplissez tous les champs obligatoires.', 'error'); return; }
-  if (password.length < 6)          { showMsg('reg-msg', 'Mot de passe trop court (min 6).', 'error'); return; }
+    if (!name || !email || !password) { showMsg('reg-msg', 'Remplissez tous les champs obligatoires.', 'error'); return; }
+    if (password.length < 6)          { showMsg('reg-msg', 'Mot de passe trop court (min 6).', 'error'); return; }
 
-  showMsg('reg-msg', 'Création du compte...', 'success');
+    showMsg('reg-msg', 'Création du compte...', 'success');
 
-  // ÉTAPE 1 : Créer le compte auth
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-    email, password, options: { data: { name, phone, role } }
-  });
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email, password, options: { data: { name, phone, role } }
+    });
 
-  if (signUpError) { showMsg('reg-msg', signUpError.message, 'error'); return; }
-  if (!signUpData.user) { showMsg('reg-msg', 'Vérifiez votre email pour confirmer.', 'success'); return; }
+    if (signUpError) { showMsg('reg-msg', signUpError.message, 'error'); return; }
 
-  showMsg('reg-msg', 'Création du profil...', 'success');
+    // Si email confirmation activée, user peut être null
+    if (!signUpData.user) {
+      showMsg('reg-msg', 'Vérifiez votre email pour confirmer le compte puis connectez-vous.', 'success');
+      return;
+    }
 
-  // ÉTAPE 2 : Créer le profil MANUELLEMENT (sans trigger)
-  const { error: profileError } = await supabase
-    .from('profiles')
-    .insert([{
-      id:    signUpData.user.id,
-      name:  name,
-      email: email,
-      phone: phone || null,
-      role:  role
-    }]);
+    if (role === 'driver') {
+      showMsg('reg-msg', 'Configuration du profil chauffeur...', 'success');
+      // ✅ Attendre que le trigger SQL crée le profil dans public.profiles
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-  if (profileError) { 
-    showMsg('reg-msg', 'Erreur profil : ' + profileError.message, 'error'); 
-    return; 
-  }
-
-  // ÉTAPE 3 : Si chauffeur, créer le driver
-  if (role === 'driver') {
-    showMsg('reg-msg', 'Configuration chauffeur...', 'success');
-
-    const qrCode = `DRIVER-${signUpData.user.id}-${Date.now()}`;
-    const { error: driverError } = await supabase
-      .from('drivers')
-      .insert([{
+      const qrCode = `DRIVER-${signUpData.user.id}-${Date.now()}`;
+      const { error: driverError } = await supabase.from('drivers').insert([{
         user_id: signUpData.user.id,
         vehicle: vehicle || 'N/A',
         qr_code: qrCode,
         status:  'waiting'
       }]);
 
-    if (driverError) { 
-      showMsg('reg-msg', 'Erreur chauffeur : ' + driverError.message, 'error'); 
-      return; 
+      if (driverError) {
+        showMsg('reg-msg', 'Erreur profil chauffeur : ' + driverError.message, 'error');
+        return;
+      }
     }
+
+    showMsg('reg-msg', 'Compte créé ! Connectez-vous.', 'success');
+    setTimeout(() => switchAuthTab('login'), 1500);
   }
 
-  showMsg('reg-msg', 'Compte créé ! Connectez-vous.', 'success');
-  setTimeout(() => switchAuthTab('login'), 1500);
-}
- 
- async function loadUserData(user) {
-  if (!user) return;
-  currentUser = user;
+  async function loadUserData(user) {
+    if (!user) return;
+    currentUser = user;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+    const { data: profile } = await supabase
+      .from('profiles').select('*').eq('id', user.id).single();
 
-  if (!profile) {
-    showMsg('login-msg', 'Profil introuvable. Recréez votre compte.', 'error');
-    await supabase.auth.signOut();
-    currentUser = null;
-    return;
+    // ✅ Retry si le trigger SQL n'a pas encore créé le profil
+    if (!profile) {
+      await new Promise(r => setTimeout(r, 1000));
+      return loadUserData(user);
+    }
+
+    currentProfile = profile;
+
+    if (profile.role === 'driver') {
+      const { data: driver } = await supabase
+        .from('drivers').select('*').eq('user_id', user.id).single();
+      currentDriver = driver;
+    }
+
+    document.getElementById('login-screen').classList.remove('active');
+    document.getElementById('app-screen').classList.add('active');
+    setupNav();
   }
 
-  currentProfile = profile;
-
-  if (profile.role === 'driver') {
-    const { data: driver } = await supabase
-      .from('drivers')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-    currentDriver = driver;
-  }
-
-  showMsg('login-msg', '', '');
-  document.getElementById('login-screen').classList.remove('active');
-  document.getElementById('app-screen').classList.add('active');
-  setupNav();
-}
- 
   async function doLogout() {
     await supabase.auth.signOut();
     currentUser = null; currentProfile = null; currentDriver = null;
@@ -536,7 +588,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('login-screen').classList.add('active');
     showToast('Déconnecté');
   }
- 
+
   function switchAuthTab(tab) {
     document.getElementById('form-login').style.display    = tab === 'login'    ? 'block' : 'none';
     document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
@@ -544,7 +596,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'))
     );
   }
- 
+
   // ==================== NAVIGATION ====================
   const navConfig = {
     driver: [
@@ -561,7 +613,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       { id: 'admin-docks',     label: 'Docks',          icon: '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>' }
     ]
   };
- 
+
   function setupNav() {
     if (!currentProfile) return;
     const role = currentProfile.role;
@@ -576,7 +628,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     ).join('');
     goTo(navConfig[role][0].id);
   }
- 
+
   function goTo(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -593,17 +645,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (pageId === 'admin-drivers')    renderAdminDrivers();
     if (pageId === 'admin-docks')      renderAdminDocks();
   }
- 
+
   function toggleSidebar() {
     document.getElementById('sidebar').classList.toggle('open');
     document.getElementById('nav-backdrop').classList.toggle('open');
   }
- 
+
   function closeSidebar() {
     document.getElementById('sidebar').classList.remove('open');
     document.getElementById('nav-backdrop').classList.remove('open');
   }
- 
+
   // ==================== DRIVER PAGES ====================
   async function renderDriverProfile() {
     if (!currentDriver) {
@@ -620,15 +672,195 @@ document.addEventListener('DOMContentLoaded', async () => {
        <div class="info-item"><label>Rôle</label><span>Chauffeur</span></div>
        <div class="info-item"><label>ID Chauffeur</label><span>${d.id}</span></div>
        <div class="info-item"><label>Code QR</label><span style="color:var(--muted);font-size:0.72rem;">${d.qr_code}</span></div>`;
-    generateQR(document.getElementById('driver-qr-canvas'), d.qr_code, 200);
+    // Remplir la carte QR photo
+    if (document.getElementById('qr-card-name'))    document.getElementById('qr-card-name').textContent    = u.name;
+    if (document.getElementById('qr-card-vehicle')) document.getElementById('qr-card-vehicle').textContent = '🚛 ' + d.vehicle;
+    generateQR(document.getElementById('driver-qr-canvas'), d.qr_code, 180);
     document.getElementById('driver-qr-label').textContent = d.qr_code;
+
     const { data: logs } = await supabase.from('logs').select('*, docks(name)').eq('driver_id', d.id);
     const active = logs?.find(l => l.status !== 'completed');
     document.getElementById('driver-status-display').innerHTML = active
       ? `Statut actuel : ${badgeHtml(active.status)} — Dock : ${active.docks?.name || '—'}`
       : `${badgeHtml('waiting')} — Aucun passage actif`;
   }
- 
+
+  // ========== TÉLÉCHARGER LA CARTE QR COMME IMAGE ==========
+  function downloadDriverCard() {
+    const card = document.querySelector('.qr-card-inner');
+    if (!card) return;
+    // Utiliser html2canvas si disponible, sinon fallback canvas QR seul
+    if (window.html2canvas) {
+      html2canvas(card, { backgroundColor: '#0d1f14', scale: 2 }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'carte-chauffeur.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    } else {
+      // Fallback : télécharger le QR seul avec infos dessinées
+      const qrCanvas = document.getElementById('driver-qr-canvas');
+      const finalCanvas = document.createElement('canvas');
+      finalCanvas.width  = 400;
+      finalCanvas.height = 500;
+      const ctx = finalCanvas.getContext('2d');
+
+      // Fond dégradé
+      const grad = ctx.createLinearGradient(0, 0, 400, 500);
+      grad.addColorStop(0, '#0d1f14');
+      grad.addColorStop(0.5, '#0a1628');
+      grad.addColorStop(1, '#0d1f14');
+      ctx.fillStyle = grad;
+      ctx.roundRect(0, 0, 400, 500, 20);
+      ctx.fill();
+
+      // Bordure verte
+      ctx.strokeStyle = '#00e5a0';
+      ctx.lineWidth = 2;
+      ctx.roundRect(1, 1, 398, 498, 20);
+      ctx.stroke();
+
+      // Logo
+      ctx.fillStyle = '#e8eaf2';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('Ware', 30, 55);
+      ctx.fillStyle = '#00e5a0';
+      ctx.fillText('Track', 95, 55);
+
+      // Badge
+      ctx.fillStyle = '#00e5a0';
+      ctx.roundRect(290, 35, 80, 22, 4);
+      ctx.fill();
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText('CHAUFFEUR', 296, 51);
+
+      // Nom
+      ctx.fillStyle = '#e8eaf2';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(currentProfile?.name || '—', 30, 110);
+
+      // Véhicule
+      ctx.fillStyle = '#6b7491';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('🚛 ' + (currentDriver?.vehicle || '—'), 30, 140);
+
+      // QR Code au centre
+      if (qrCanvas) {
+        ctx.drawImage(qrCanvas, 100, 165, 200, 200);
+        // Bordure QR
+        ctx.strokeStyle = 'rgba(0,229,160,0.4)';
+        ctx.lineWidth = 3;
+        ctx.roundRect(97, 162, 206, 206, 10);
+        ctx.stroke();
+      }
+
+      // Code texte
+      ctx.fillStyle = '#6b7491';
+      ctx.font = '9px monospace';
+      ctx.textAlign = 'center';
+      const code = currentDriver?.qr_code || '';
+      ctx.fillText(code.length > 45 ? code.slice(0, 45) + '…' : code, 200, 390);
+
+      // Footer
+      ctx.fillStyle = 'rgba(107,116,145,0.6)';
+      ctx.font = '11px sans-serif';
+      ctx.fillText('Présentez cette carte à l\'opérateur du dock', 200, 460);
+
+      const link = document.createElement('a');
+      link.download = 'carte-chauffeur.png';
+      link.href = finalCanvas.toDataURL('image/png');
+      link.click();
+    }
+    showToast('Carte téléchargée');
+  }
+
+  // ========== DRIVER : SCANNER UN DOCK ==========
+  let driverQrScanner = null, driverScannedDock = null;
+
+  function openDriverScanner() {
+    const readerEl = document.getElementById('driver-qr-reader');
+    const manualEl = document.getElementById('driver-scan-manual');
+    readerEl.style.display = 'block';
+    manualEl.style.display = 'block';
+    if (driverQrScanner) { try { driverQrScanner.stop(); } catch(e) {} driverQrScanner = null; }
+    readerEl.innerHTML = '';
+    try {
+      driverQrScanner = new Html5Qrcode('driver-qr-reader');
+      driverQrScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: 200 },
+        async (decodedText) => {
+          try { driverQrScanner.stop(); } catch(e) {}
+          driverQrScanner = null;
+          readerEl.style.display = 'none';
+          await driverProcessDockQR(decodedText);
+        },
+        () => {}
+      );
+    } catch(e) {
+      readerEl.innerHTML = '<p style="color:var(--muted);font-size:0.78rem;padding:1rem;">Caméra non disponible — saisie manuelle.</p>';
+    }
+  }
+
+  async function driverSubmitManual() {
+    const val = document.getElementById('driver-manual-qr').value.trim();
+    if (!val) { showToast('Entrez un code QR', true); return; }
+    document.getElementById('driver-qr-reader').style.display = 'none';
+    document.getElementById('driver-scan-manual').style.display = 'none';
+    await driverProcessDockQR(val);
+  }
+
+  async function driverProcessDockQR(code) {
+    const { data: dock } = await supabase.from('docks').select('*').eq('qr_code', code).single();
+    if (!dock) { showToast('QR dock non reconnu', true); return; }
+    driverScannedDock = dock;
+    document.getElementById('driver-scan-dock-name').textContent = '📍 ' + dock.name;
+    document.getElementById('driver-scan-result').style.display = 'block';
+    showToast('Dock identifié : ' + dock.name);
+  }
+
+  async function driverRecordEntry() {
+    if (!driverScannedDock || !currentDriver) return;
+    const { data: existing } = await supabase.from('logs').select('id')
+      .eq('driver_id', currentDriver.id).neq('status', 'completed').limit(1);
+    if (existing && existing.length) { showToast('Vous êtes déjà enregistré à l\'intérieur !', true); return; }
+    const { error } = await supabase.from('logs').insert([{
+      driver_id: currentDriver.id,
+      dock_id:   driverScannedDock.id,
+      status:    'arrived'
+    }]);
+    if (error) { showToast(error.message, true); return; }
+    await supabase.from('drivers').update({ status: 'arrived' }).eq('id', currentDriver.id);
+    showToast('✅ Entrée enregistrée au ' + driverScannedDock.name);
+    driverResetScan();
+    renderDriverProfile();
+  }
+
+  async function driverRecordExit() {
+    if (!driverScannedDock || !currentDriver) return;
+    const { data: log } = await supabase.from('logs').select('id, entry_time')
+      .eq('driver_id', currentDriver.id).neq('status', 'completed').limit(1).single();
+    if (!log) { showToast('Aucune entrée active trouvée', true); return; }
+    const exitTime = new Date().toISOString();
+    const duration = Math.round((new Date(exitTime) - new Date(log.entry_time)) / 60000);
+    const { error } = await supabase.from('logs').update({ exit_time: exitTime, status: 'completed', duration }).eq('id', log.id);
+    if (error) { showToast(error.message, true); return; }
+    await supabase.from('drivers').update({ status: 'waiting' }).eq('id', currentDriver.id);
+    showToast(`🚪 Sortie enregistrée — durée : ${fmtDur(duration)}`);
+    driverResetScan();
+    renderDriverProfile();
+  }
+
+  function driverResetScan() {
+    driverScannedDock = null;
+    if (driverQrScanner) { try { driverQrScanner.stop(); } catch(e) {} driverQrScanner = null; }
+    document.getElementById('driver-scan-result').style.display  = 'none';
+    document.getElementById('driver-qr-reader').style.display    = 'none';
+    document.getElementById('driver-scan-manual').style.display  = 'none';
+    if (document.getElementById('driver-manual-qr')) document.getElementById('driver-manual-qr').value = '';
+  }
+
   async function renderDriverLogs() {
     if (!currentDriver) return;
     const { data: logs } = await supabase.from('logs').select('*, docks(name)')
@@ -639,16 +871,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<tr><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.duration)}</td><td>${badgeHtml(l.status)}</td></tr>`
     ).join('');
   }
- 
+
   // ==================== OPERATOR SCAN ====================
   let scannedDriverObj = null, scannedDockObj = null;
- 
+
   async function renderOperatorScan() {
     updateScanSteps();
     await renderOperatorActive();
     await renderDockQRs();
   }
- 
+
   function updateScanSteps() {
     document.getElementById('step1-card').classList.toggle('done', !!scannedDriverObj);
     document.getElementById('step2-card').classList.toggle('done', !!scannedDockObj);
@@ -664,9 +896,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       box.style.display = 'none';
     }
   }
- 
+
   function resetScan() { scannedDriverObj = null; scannedDockObj = null; updateScanSteps(); }
- 
+
   async function recordEntry() {
     if (!scannedDriverObj || !scannedDockObj) return;
     const { data: existing } = await supabase.from('logs').select('id')
@@ -679,7 +911,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     resetScan();
     await renderOperatorActive();
   }
- 
+
   async function recordExit() {
     if (!scannedDriverObj || !scannedDockObj) return;
     const { data: log } = await supabase.from('logs').select('id, entry_time')
@@ -694,7 +926,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     resetScan();
     await renderOperatorActive();
   }
- 
+
   async function renderOperatorActive() {
     const { data: logs } = await supabase.from('logs').select(`
       *, drivers(vehicle, profiles!drivers_user_id_fkey(name)), docks(name)
@@ -705,7 +937,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<tr><td>${l.drivers?.profiles?.name || '—'}</td><td>${l.drivers?.vehicle || '—'}</td><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${badgeHtml(l.status)}</td></tr>`
     ).join('');
   }
- 
+
   async function renderDockQRs() {
     const { data: docks } = await supabase.from('docks').select('*');
     const container = document.getElementById('dock-qr-list');
@@ -719,10 +951,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       generateQR(cv, dk.qr_code, 140);
     }
   }
- 
+
   // ==================== QR SCANNER ====================
   let qrScanner = null, scanTarget = null;
- 
+
   function openScanner(target) {
     scanTarget = target;
     document.getElementById('scanner-modal-title').textContent = target === 'driver-qr' ? 'Scanner QR Chauffeur' : 'Scanner QR Dock';
@@ -730,7 +962,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('scanner-modal').classList.add('open');
     startCamera();
   }
- 
+
   function startCamera() {
     if (qrScanner) { try { qrScanner.stop(); } catch(e) {} qrScanner = null; }
     const el = document.getElementById('qr-reader');
@@ -742,16 +974,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       el.innerHTML = '<p style="color:var(--muted);font-size:0.78rem;padding:1rem;">Caméra non disponible — saisie manuelle.</p>';
     }
   }
- 
+
   async function onQRSuccess(decodedText) { stopCamera(); closeScanner(); await processQR(decodedText); }
- 
+
   async function submitManualQR() {
     const val = document.getElementById('manual-qr-input').value.trim();
     if (!val) { showToast('Entrez un code QR', true); return; }
     await processQR(val);
     closeScanner();
   }
- 
+
   async function processQR(code) {
     if (scanTarget === 'driver-qr') {
       const { data: driver } = await supabase.from('drivers').select(`
@@ -768,10 +1000,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     updateScanSteps();
   }
- 
+
   function stopCamera() { if (qrScanner) { try { qrScanner.stop(); } catch(e) {} qrScanner = null; } }
   function closeScanner() { stopCamera(); document.getElementById('scanner-modal').classList.remove('open'); }
- 
+
   // ==================== ADMIN PAGES ====================
   async function renderAdminDashboard() {
     const { data: logs }    = await supabase.from('logs').select('status, duration');
@@ -798,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return `<tr><td>${l.drivers?.profiles?.name || '—'}</td><td>${l.drivers?.vehicle || '—'}</td><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtDur(dur)}</td><td>${badgeHtml(l.status)}</td></tr>`;
     }).join('');
   }
- 
+
   async function renderAdminLogs() {
     const search = (document.getElementById('filter-search')?.value || '').toLowerCase();
     const status = document.getElementById('filter-status')?.value || '';
@@ -820,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       `<tr><td>${l.drivers?.profiles?.name || '—'}</td><td>${l.drivers?.vehicle || '—'}</td><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.duration)}</td><td>${badgeHtml(l.status)}</td></tr>`
     ).join('');
   }
- 
+
   async function exportCSV() {
     const { data: logs } = await supabase.from('logs').select(`
       entry_time, exit_time, duration, status,
@@ -839,7 +1071,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     link.click();
     showToast('Export CSV téléchargé');
   }
- 
+
   async function renderAdminDrivers() {
     const { data: drivers } = await supabase.from('drivers').select(`
       *, profiles!drivers_user_id_fkey(name, email, phone)
@@ -857,7 +1089,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </tr>`
     ).join('');
   }
- 
+
   async function renderAdminDocks() {
     const { data: docks } = await supabase.from('docks').select('*');
     const grid = document.getElementById('docks-grid');
@@ -876,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       generateQR(cv, dk.qr_code, 150);
     }
   }
- 
+
   async function addDock() {
     const name = document.getElementById('new-dock-name').value.trim();
     if (!name) { showToast('Entrez un nom de dock', true); return; }
@@ -887,16 +1119,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     showToast('Dock ajouté');
     renderAdminDocks();
   }
- 
+
   function showQRView(qrCode, title) {
     document.getElementById('qr-view-title').textContent = title;
     document.getElementById('qr-view-id').textContent    = qrCode;
     document.getElementById('qr-view-modal').classList.add('open');
     setTimeout(() => generateQR(document.getElementById('qr-view-canvas'), qrCode, 200), 50);
   }
- 
+
   function closeQRView() { document.getElementById('qr-view-modal').classList.remove('open'); }
- 
+
   // ==================== EVENT LISTENERS ====================
   document.getElementById('scanner-modal').addEventListener('click', function(e) { if (e.target === this) closeScanner(); });
   document.getElementById('qr-view-modal').addEventListener('click', function(e) { if (e.target === this) closeQRView(); });
@@ -904,38 +1136,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('reg-vehicle-field').style.display = this.value === 'driver' ? 'block' : 'none';
   });
   document.getElementById('reg-role').dispatchEvent(new Event('change'));
- 
+
   // ==================== EXPOSITION GLOBALE ====================
   // Nécessaire car les onclick= dans le HTML ne voient pas les fonctions dans DOMContentLoaded
-  window.doLogin        = doLogin;
-  window.doRegister     = doRegister;
-  window.doLogout       = doLogout;
-  window.quickLogin     = quickLogin;
-  window.switchAuthTab  = switchAuthTab;
-  window.goTo           = goTo;
-  window.toggleSidebar  = toggleSidebar;
-  window.closeSidebar   = closeSidebar;
-  window.openScanner    = openScanner;
-  window.closeScanner   = closeScanner;
-  window.submitManualQR = submitManualQR;
-  window.resetScan      = resetScan;
-  window.recordEntry    = recordEntry;
-  window.recordExit     = recordExit;
-  window.addDock        = addDock;
-  window.downloadQR     = downloadQR;
-  window.showQRView     = showQRView;
-  window.closeQRView    = closeQRView;
-  window.exportCSV      = exportCSV;
-  window.renderAdminLogs = renderAdminLogs;
- 
+  window.doLogin            = doLogin;
+  window.doRegister         = doRegister;
+  window.doLogout           = doLogout;
+  window.quickLogin         = quickLogin;
+  window.switchAuthTab      = switchAuthTab;
+  window.goTo               = goTo;
+  window.toggleSidebar      = toggleSidebar;
+  window.closeSidebar       = closeSidebar;
+  window.openScanner        = openScanner;
+  window.closeScanner       = closeScanner;
+  window.submitManualQR     = submitManualQR;
+  window.resetScan          = resetScan;
+  window.recordEntry        = recordEntry;
+  window.recordExit         = recordExit;
+  window.addDock            = addDock;
+  window.downloadQR         = downloadQR;
+  window.showQRView         = showQRView;
+  window.closeQRView        = closeQRView;
+  window.exportCSV          = exportCSV;
+  window.renderAdminLogs    = renderAdminLogs;
+  window.downloadDriverCard = downloadDriverCard;
+  window.openDriverScanner  = openDriverScanner;
+  window.driverSubmitManual = driverSubmitManual;
+  window.driverRecordEntry  = driverRecordEntry;
+  window.driverRecordExit   = driverRecordExit;
+  window.driverResetScan    = driverResetScan;
+
   // ==================== SESSION AU DÉMARRAGE ====================
   const { data: { session } } = await supabase.auth.getSession();
   if (session) await loadUserData(session.user);
- 
+
   supabase.auth.onAuthStateChange((_event, session) => {
     if (session && !currentUser) loadUserData(session.user);
   });
- 
+
 }); // ← fin DOMContentLoaded
 </script>
 </body>
