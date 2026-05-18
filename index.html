@@ -276,7 +276,7 @@
               <div class="qr-card-name" id="qr-card-name">—</div>
               <div class="qr-card-vehicle" id="qr-card-vehicle">—</div>
               <div class="qr-card-qr">
-                <img id="driver-qr-img" src="" alt="QR Code" style="width:200px;height:200px;border-radius:8px;display:block;">
+                <canvas id="driver-qr-canvas" style="border-radius:8px; background:#fff;"></canvas>
               </div>
               <div class="qr-card-code" id="driver-qr-label">—</div>
               <div class="qr-card-footer">Présentez cette carte à l'opérateur du dock</div>
@@ -419,7 +419,7 @@
   <div class="modal" style="text-align:center;">
     <div class="modal-title" id="qr-view-title">QR Code</div>
     <div class="qr-wrapper">
-      <img id="qr-view-img" src="" alt="QR Code" style="width:220px;height:220px;border-radius:8px;display:block;margin:0 auto;">
+      <canvas id="qr-view-canvas" style="border-radius:8px; background:#fff; display:block; margin:0 auto;"></canvas>
       <div class="qr-id" id="qr-view-id"></div>
     </div>
     <button class="btn sm" style="margin-top:1rem;" onclick="downloadQRById()">Télécharger</button>
@@ -474,42 +474,46 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `<span class="badge ${status}">${map[status] || status}</span>`;
   }
 
-  // ✅ Génère QR via qrcode.js en DataURL puis injecte dans un <img> ou <canvas>
-  function generateQR(targetEl, text, size = 180) {
-    if (!targetEl || !text || !window.QRCode) return;
-    QRCode.toDataURL(text, {
+  // ✅ generateQR — utilise QRCode.toCanvas (méthode la plus fiable de qrcode@1.5.3)
+  function generateQR(canvas, text, size) {
+    size = size || 180;
+    if (!canvas || !text) return;
+    // S'assurer que la librairie est chargée
+    if (!window.QRCode) { setTimeout(() => generateQR(canvas, text, size), 300); return; }
+    canvas.width  = size;
+    canvas.height = size;
+    // Fond blanc d'abord
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    QRCode.toCanvas(canvas, text, {
       width: size,
-      margin: 3,
-      color: { dark: '#000000', light: '#ffffff' },
-      errorCorrectionLevel: 'H'
-    }, (err, url) => {
-      if (err) { console.warn('QR error:', err); return; }
-      if (targetEl.tagName === 'IMG') {
-        targetEl.src = url;
-      } else if (targetEl.tagName === 'CANVAS') {
-        const img = new Image();
-        img.onload = () => {
-          targetEl.width  = size;
-          targetEl.height = size;
-          targetEl.getContext('2d').drawImage(img, 0, 0);
-        };
-        img.src = url;
-      }
+      margin: 2,
+      color: { dark: '#000000', light: '#ffffff' }
+    }, function(err) {
+      if (err) console.warn('QR error:', err);
     });
   }
 
-  // ✅ Retourne une Promise<dataURL> pour usage dans downloadDriverCard
-  function getQRDataUrl(text, size = 240) {
-    return new Promise((resolve, reject) => {
-      if (!window.QRCode) { reject('QRCode not loaded'); return; }
-      QRCode.toDataURL(text, {
+  // ✅ getQRDataUrl — retourne Promise<string> avec le dataURL du QR
+  function getQRDataUrl(text, size) {
+    size = size || 240;
+    return new Promise(function(resolve, reject) {
+      if (!window.QRCode) { reject(new Error('QRCode not loaded')); return; }
+      // Créer un canvas temporaire hors-écran
+      var tmp = document.createElement('canvas');
+      tmp.width  = size;
+      tmp.height = size;
+      var ctx = tmp.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      QRCode.toCanvas(tmp, text, {
         width: size,
-        margin: 3,
-        color: { dark: '#000000', light: '#ffffff' },
-        errorCorrectionLevel: 'H'
-      }, (err, url) => {
-        if (err) reject(err);
-        else resolve(url);
+        margin: 2,
+        color: { dark: '#000000', light: '#ffffff' }
+      }, function(err) {
+        if (err) { reject(err); return; }
+        resolve(tmp.toDataURL('image/png'));
       });
     });
   }
@@ -524,7 +528,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch(e) { showToast('Erreur téléchargement QR', true); }
   }
 
-  // ✅ Télécharger QR depuis le modal (utilise le texte affiché)
+  // ✅ Télécharger QR depuis le modal (utilise le canvas rendu)
   async function downloadQRById() {
     const qrText = document.getElementById('qr-view-id')?.textContent;
     const title  = document.getElementById('qr-view-title')?.textContent || 'qr-code';
@@ -716,9 +720,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Remplir la carte QR photo
     if (document.getElementById('qr-card-name'))    document.getElementById('qr-card-name').textContent    = u.name;
     if (document.getElementById('qr-card-vehicle')) document.getElementById('qr-card-vehicle').textContent = '🚛 ' + d.vehicle;
-    // ✅ qrcode.js DataURL — fond blanc garanti, pas de CORS
-    const qrImg = document.getElementById('driver-qr-img');
-    if (qrImg) generateQR(qrImg, d.qr_code, 200);
+    // ✅ generateQR sur canvas — méthode fiable toCanvas
+    const qrCanvas = document.getElementById('driver-qr-canvas');
+    if (qrCanvas) generateQR(qrCanvas, d.qr_code, 200);
     document.getElementById('driver-qr-label').textContent = d.qr_code;
 
     const { data: logs } = await supabase.from('logs').select('*, docks(name)').eq('driver_id', d.id);
@@ -975,10 +979,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!docks) return;
     for (const dk of docks) {
       const wrap = document.createElement('div'); wrap.className = 'qr-wrapper'; wrap.style.cssText = 'min-width:160px;max-width:200px;';
-      const img = document.createElement('img');
-      img.alt = dk.name;
-      img.style.cssText = 'width:140px;height:140px;border-radius:6px;display:block;';
-      generateQR(img, dk.qr_code, 140);
+      const cv = document.createElement('canvas');
+      cv.style.cssText = 'border-radius:6px;display:block;background:#fff;';
+      generateQR(cv, dk.qr_code, 140);
+      const img = cv; // alias pour compatibilité
       const lbl = document.createElement('div'); lbl.className = 'qr-id'; lbl.textContent = dk.name;
       wrap.appendChild(img); wrap.appendChild(lbl); container.appendChild(wrap);
     }
@@ -1129,9 +1133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!docks) return;
     for (const dk of docks) {
       const wrap  = document.createElement('div'); wrap.className = 'card'; wrap.style.cssText = 'min-width:200px;max-width:240px;text-align:center;';
-      const img   = document.createElement('img');
-      img.alt = dk.name;
-      img.style.cssText = 'width:150px;height:150px;border-radius:6px;display:block;margin:0 auto 0.5rem;';
+      const img   = document.createElement('canvas');
+      img.style.cssText = 'border-radius:6px;display:block;margin:0 auto 0.5rem;background:#fff;';
       generateQR(img, dk.qr_code, 150);
       const nm    = document.createElement('div'); nm.style.cssText = 'font-size:0.8rem;font-weight:500;margin-bottom:0.5rem;'; nm.textContent = dk.name;
       const id    = document.createElement('div'); id.className = 'qr-id'; id.textContent = dk.qr_code;
@@ -1162,9 +1165,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('qr-view-title').textContent = title;
     document.getElementById('qr-view-id').textContent    = qrCode;
     document.getElementById('qr-view-modal').classList.add('open');
-    // ✅ qrcode.js DataURL
-    const img = document.getElementById('qr-view-img');
-    if (img) generateQR(img, qrCode, 220);
+    // ✅ generateQR sur canvas
+    const cv = document.getElementById('qr-view-canvas');
+    if (cv) setTimeout(() => generateQR(cv, qrCode, 220), 80);
   }
 
   function closeQRView() { document.getElementById('qr-view-modal').classList.remove('open'); }
