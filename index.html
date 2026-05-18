@@ -684,8 +684,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('driver-qr-label').textContent = d.qr_code;
 
     const qrCodeText = d.qr_code; 
-const googleApiUrl = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=${encodeURIComponent(qrCodeText)}`;
-document.getElementById('driver-qr-img').src = googleApiUrl;
+
+document.getElementById('driver-qr-img').src = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(qrCodeText)}`;
 
     const { data: logs } = await supabase.from('logs').select('*, docks(name)').eq('driver_id', d.id);
     const active = logs?.find(l => l.status !== 'completed');
