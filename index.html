@@ -736,12 +736,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // ========== TÉLÉCHARGER LA CARTE QR COMME IMAGE ==========
-  async function downloadDriverCard() {
+ async function downloadDriverCard() {
     if (!currentDriver) return;
     showToast('Génération de la carte...');
     try {
-      // ✅ qrcode.js DataURL — pas de CORS
-      const qrDataUrl = await getQRDataUrl(currentDriver.qr_code, 260);
+      // 🔴 CORRECTION ICI : On prend l'image du QR code directement depuis l'écran
+      const mainCanvas = document.getElementById('driver-qr-canvas');
+      if (!mainCanvas) {
+        showToast("Le QR Code n'est pas encore généré à l'écran", true);
+        return;
+      }
+      const qrDataUrl = mainCanvas.toDataURL('image/png');
+
       const finalCanvas = document.createElement('canvas');
       finalCanvas.width  = 420;
       finalCanvas.height = 580;
@@ -775,7 +781,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       ctx.fillStyle = '#6b7491'; ctx.font = '15px sans-serif';
       ctx.fillText('Vehicule : ' + (currentDriver?.vehicle || '-'), 30, 145);
 
-      // QR Image (DataURL — pas de CORS)
+      // QR Image
       const qrImg = new Image();
       await new Promise((resolve) => {
         qrImg.onload = resolve;
