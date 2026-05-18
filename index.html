@@ -478,24 +478,16 @@ function generateQR(canvasId, text, size = 180) {
     const canvas = document.getElementById(canvasId);
     if (!canvas || !text) return;
 
-    // 1. On vérifie si la librairie est là
-    if (typeof QRCode === 'undefined') {
-        console.error("Erreur : La librairie QRCode n'est pas chargée.");
-        return;
-    }
-
-    // 2. On utilise 'toCanvas' qui est DIRECT et immédiat
-    // Pas besoin de 'new Image()' ou de 'onload'
+    // Utilisation de la méthode synchrone toCanvas
     QRCode.toCanvas(canvas, text, {
         width: size,
         margin: 2,
         color: {
-            dark: '#000000',  // Noir
-            light: '#ffffff' // Fond blanc OPAQUE (très important pour le téléchargement)
+            dark: '#000000',   // Noir pour les points
+            light: '#ffffff'  // Blanc OPAQUE pour le fond
         }
     }, function (error) {
-        if (error) console.error("Erreur lors de la génération :", error);
-        else console.log("QR Code généré avec succès !");
+        if (error) console.error("Erreur génération QR:", error);
     });
 }
 
