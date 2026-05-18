@@ -474,84 +474,48 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `<span class="badge ${status}">${map[status] || status}</span>`;
   }
 
-  // ✅ generateQR — robuste, attend que QRCode soit dispo et canvas dans le DOM
-  function generateQR(canvas, text, size) {
-    size = size || 180;
-    if (!canvas || !text) return;
-    if (!window.QRCode) {
-      setTimeout(() => generateQR(canvas, text, size), 500);
+// ✅ Nouvelle version robuste et nettoyée pour générer le QR Code
+  function generateQR(canvasId, text, size = 180) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas || !text) {
+      console.warn("Canvas ou texte manquant pour le QR Code.");
       return;
     }
-    // Forcer les dimensions AVANT toCanvas
-    canvas.width  = size;
+
+    // 1. Forcer les dimensions exactes du canvas
+    canvas.width = size;
     canvas.height = size;
-    canvas.style.width  = size + 'px';
+    canvas.style.width = size + 'px';
     canvas.style.height = size + 'px';
 
-    // Utiliser requestAnimationFrame pour s'assurer que le canvas est rendu
-    requestAnimationFrame(() => {
-      QRCode.toCanvas(canvas, text, {
-        width: size,
-        margin: 3,
-        color: { dark: '#000000', light: '#ffffff' }
-      }, function(err) {
-        if (err) {
-          console.warn('QR toCanvas error:', err);
-          // Fallback : dessiner via Image + DataURL
-          getQRDataUrl(text, size).then(url => {
-            const img = new Image();
-            img.onload = () => {
-              canvas.width  = size;
-              canvas.height = size;
-              const ctx = canvas.getContext('2d');
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(0, 0, size, size);
-              ctx.drawImage(img, 0, 0, size, size);
-            };
-            img.src = url;
-          }).catch(e => console.warn('QR fallback error:', e));
-        }
-      });
-    });
-  }
+    // 2. Vérifier si la librairie QRCode est bien chargée
+    if (typeof QRCode === 'undefined') {
+      console.error("Erreur : La librairie QRCode n'est pas encore chargée.");
+      setTimeout(() => generateQR(canvasId, text, size), 500);
+      return;
+    }
 
-  // ✅ getQRDataUrl — canvas hors-écran, retourne Promise<dataURL>
-  function getQRDataUrl(text, size) {
-    size = size || 240;
-    return new Promise(function(resolve, reject) {
-      if (!window.QRCode) {
-        // Attendre que QRCode soit chargé (max 3s)
-        let tries = 0;
-        const wait = setInterval(() => {
-          tries++;
-          if (window.QRCode) {
-            clearInterval(wait);
-            getQRDataUrl(text, size).then(resolve).catch(reject);
-          } else if (tries > 30) {
-            clearInterval(wait);
-            reject(new Error('QRCode library not loaded'));
-          }
-        }, 100);
-        return;
+    // 3. Générer l'image en Data URL (évite les bugs d'affichage de toCanvas)
+    QRCode.toDataURL(text, {
+      width: size,
+      margin: 2,
+      color: {
+        dark: '#000000', // Points noirs
+        light: '#ffffff' // Fond blanc
       }
-      const tmp = document.createElement('canvas');
-      tmp.width  = size;
-      tmp.height = size;
-      // Attacher temporairement au DOM (nécessaire dans certains navigateurs)
-      tmp.style.position = 'absolute';
-      tmp.style.left     = '-9999px';
-      tmp.style.top      = '-9999px';
-      document.body.appendChild(tmp);
-      QRCode.toCanvas(tmp, text, {
-        width: size,
-        margin: 3,
-        color: { dark: '#000000', light: '#ffffff' }
-      }, function(err) {
-        const url = tmp.toDataURL('image/png');
-        document.body.removeChild(tmp);
-        if (err) { reject(err); return; }
-        resolve(url);
-      });
+    })
+    .then(url => {
+      // 4. Dessiner le QR code sur le canvas
+      const img = new Image();
+      img.onload = () => {
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+      };
+      img.src = url;
+    })
+    .catch(err => {
+      console.error("Erreur critique lors de la génération du QR Code :", err);
     });
   }
 
