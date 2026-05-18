@@ -276,7 +276,7 @@
               <div class="qr-card-name" id="qr-card-name">—</div>
               <div class="qr-card-vehicle" id="qr-card-vehicle">—</div>
               <div class="qr-card-qr">
-                <canvas id="driver-qr-canvas"></canvas>
+                <img id="driver-qr-img" src="" alt="QR Code" style="width:200px;height:200px;border-radius:8px;display:block;">
               </div>
               <div class="qr-card-code" id="driver-qr-label">—</div>
               <div class="qr-card-footer">Présentez cette carte à l'opérateur du dock</div>
@@ -419,7 +419,7 @@
   <div class="modal" style="text-align:center;">
     <div class="modal-title" id="qr-view-title">QR Code</div>
     <div class="qr-wrapper">
-      <canvas id="qr-view-canvas"></canvas>
+      <img id="qr-view-img" src="" alt="QR Code" style="width:220px;height:220px;border-radius:8px;display:block;margin:0 auto;">
       <div class="qr-id" id="qr-view-id"></div>
     </div>
     <button class="btn sm" style="margin-top:1rem;" onclick="downloadQR('qr-view-canvas','qr-code')">Télécharger</button>
@@ -474,31 +474,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `<span class="badge ${status}">${map[status] || status}</span>`;
   }
 
+  // ✅ Génère QR via Google Charts API — image PNG directe, fond blanc, modules noirs
   function generateQR(canvas, text, size = 180) {
-    if (window.QRCode && canvas) {
-      // Style : fond blanc, modules noirs, marge généreuse comme un vrai QR code
-      QRCode.toCanvas(canvas, text, {
-        width: size,
-        margin: 3,
-        color: { dark: '#000000', light: '#ffffff' },
-        errorCorrectionLevel: 'H'
-      }, (err) => {
-        if (err) console.warn(err);
-        // Appliquer fond blanc avec padding sur le canvas
-        const ctx = canvas.getContext('2d');
-        canvas.style.background = '#ffffff';
-        canvas.style.borderRadius = '8px';
-        canvas.style.padding = '4px';
-      });
-    }
+    if (!canvas || !text) return;
+    const url = `https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encodeURIComponent(text)}&choe=UTF-8&chld=H|1`;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      canvas.width  = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      // Fond blanc
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, 0, 0, size, size);
+    };
+    img.src = url;
   }
 
-  function downloadQR(canvasId, filename) {
-    const canvas = document.getElementById(canvasId);
-    if (!canvas) return;
+  // ✅ Retourne directement l URL image Google Charts (pour img tag)
+  function getQRUrl(text, size = 180) {
+    return `https://chart.googleapis.com/chart?cht=qr&chs=${size}x${size}&chl=${encodeURIComponent(text)}&choe=UTF-8&chld=H|1`;
+  }
+
+  function downloadQR(qrCodeOrCanvasId, filename) {
+    // Supporte soit un qr_code string, soit un ancien canvas id (fallback)
+    let url;
+    const el = document.getElementById(qrCodeOrCanvasId);
+    if (el && el.tagName === 'IMG') {
+      url = el.src;
+    } else {
+      // qrCodeOrCanvasId est directement le texte du QR
+      url = getQRUrl(qrCodeOrCanvasId, 400);
+    }
     const link = document.createElement('a');
+    link.href = url;
     link.download = filename + '.png';
-    link.href = canvas.toDataURL();
+    link.target = '_blank';
     link.click();
   }
 
@@ -686,7 +698,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Remplir la carte QR photo
     if (document.getElementById('qr-card-name'))    document.getElementById('qr-card-name').textContent    = u.name;
     if (document.getElementById('qr-card-vehicle')) document.getElementById('qr-card-vehicle').textContent = '🚛 ' + d.vehicle;
-    generateQR(document.getElementById('driver-qr-canvas'), d.qr_code, 180);
+    // ✅ Google Charts API — image QR directe fond blanc
+    const qrImg = document.getElementById('driver-qr-img');
+    if (qrImg) qrImg.src = getQRUrl(d.qr_code, 200);
     document.getElementById('driver-qr-label').textContent = d.qr_code;
 
     const { data: logs } = await supabase.from('logs').select('*, docks(name)').eq('driver_id', d.id);
@@ -698,95 +712,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ========== TÉLÉCHARGER LA CARTE QR COMME IMAGE ==========
   function downloadDriverCard() {
-    const card = document.querySelector('.qr-card-inner');
-    if (!card) return;
-    // Utiliser html2canvas si disponible, sinon fallback canvas QR seul
-    if (window.html2canvas) {
-      html2canvas(card, { backgroundColor: '#0d1f14', scale: 2 }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = 'carte-chauffeur.png';
-        link.href = canvas.toDataURL();
-        link.click();
-      });
-    } else {
-      // Fallback : télécharger le QR seul avec infos dessinées
-      const qrCanvas = document.getElementById('driver-qr-canvas');
-      const finalCanvas = document.createElement('canvas');
-      finalCanvas.width  = 400;
-      finalCanvas.height = 500;
-      const ctx = finalCanvas.getContext('2d');
-
-      // Fond dégradé
-      const grad = ctx.createLinearGradient(0, 0, 400, 500);
-      grad.addColorStop(0, '#0d1f14');
-      grad.addColorStop(0.5, '#0a1628');
-      grad.addColorStop(1, '#0d1f14');
-      ctx.fillStyle = grad;
-      ctx.roundRect(0, 0, 400, 500, 20);
-      ctx.fill();
-
-      // Bordure verte
-      ctx.strokeStyle = '#00e5a0';
-      ctx.lineWidth = 2;
-      ctx.roundRect(1, 1, 398, 498, 20);
-      ctx.stroke();
-
-      // Logo
-      ctx.fillStyle = '#e8eaf2';
-      ctx.font = 'bold 24px sans-serif';
-      ctx.fillText('Ware', 30, 55);
-      ctx.fillStyle = '#00e5a0';
-      ctx.fillText('Track', 95, 55);
-
-      // Badge
-      ctx.fillStyle = '#00e5a0';
-      ctx.roundRect(290, 35, 80, 22, 4);
-      ctx.fill();
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.fillText('CHAUFFEUR', 296, 51);
-
-      // Nom
-      ctx.fillStyle = '#e8eaf2';
-      ctx.font = 'bold 22px sans-serif';
-      ctx.fillText(currentProfile?.name || '—', 30, 110);
-
-      // Véhicule
-      ctx.fillStyle = '#6b7491';
-      ctx.font = '14px sans-serif';
-      ctx.fillText('🚛 ' + (currentDriver?.vehicle || '—'), 30, 140);
-
-      // QR Code au centre
-      if (qrCanvas) {
-        ctx.drawImage(qrCanvas, 100, 165, 200, 200);
-        // Bordure QR
-        ctx.strokeStyle = 'rgba(0,229,160,0.4)';
-        ctx.lineWidth = 3;
-        ctx.roundRect(97, 162, 206, 206, 10);
-        ctx.stroke();
-      }
-
-      // Code texte
-      ctx.fillStyle = '#6b7491';
-      ctx.font = '9px monospace';
-      ctx.textAlign = 'center';
-      const code = currentDriver?.qr_code || '';
-      ctx.fillText(code.length > 45 ? code.slice(0, 45) + '…' : code, 200, 390);
-
-      // Footer
-      ctx.fillStyle = 'rgba(107,116,145,0.6)';
-      ctx.font = '11px sans-serif';
-      ctx.fillText('Présentez cette carte à l\'opérateur du dock', 200, 460);
-
+    if (!currentDriver) return;
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width  = 420;
+    finalCanvas.height = 560;
+    const ctx = finalCanvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 420, 560);
+    grad.addColorStop(0, '#0d1f14'); grad.addColorStop(0.5, '#0a1628'); grad.addColorStop(1, '#0d1f14');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.roundRect(0, 0, 420, 560, 20); ctx.fill();
+    ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.roundRect(1, 1, 418, 558, 20); ctx.stroke();
+    ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 26px sans-serif'; ctx.fillText('Ware', 30, 58);
+    ctx.fillStyle = '#00e5a0'; ctx.fillText('Track', 103, 58);
+    ctx.fillStyle = '#00e5a0'; ctx.beginPath(); ctx.roundRect(300, 36, 90, 24, 5); ctx.fill();
+    ctx.fillStyle = '#000000'; ctx.font = 'bold 11px sans-serif'; ctx.fillText('CHAUFFEUR', 306, 53);
+    ctx.strokeStyle = 'rgba(0,229,160,0.2)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(30, 75); ctx.lineTo(390, 75); ctx.stroke();
+    ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 24px sans-serif';
+    ctx.fillText(currentProfile?.name || '-', 30, 115);
+    ctx.fillStyle = '#6b7491'; ctx.font = '15px sans-serif';
+    ctx.fillText('Vehicule : ' + (currentDriver?.vehicle || '-'), 30, 145);
+    const qrSize = 240, qrX = 90, qrY = 175;
+    const qrImage = new Image();
+    qrImage.crossOrigin = 'anonymous';
+    qrImage.onload = () => {
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.roundRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16, 12); ctx.fill();
+      ctx.drawImage(qrImage, qrX, qrY, qrSize, qrSize);
+      ctx.fillStyle = '#6b7491'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+      const code = currentDriver.qr_code || '';
+      ctx.fillText(code.length > 50 ? code.slice(0,50)+'...' : code, 210, 445);
+      ctx.strokeStyle = 'rgba(42,48,69,0.6)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(30, 465); ctx.lineTo(390, 465); ctx.stroke();
+      ctx.fillStyle = 'rgba(107,116,145,0.7)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText("Presentez cette carte a l operateur du dock", 210, 495);
+      ctx.font = '10px sans-serif';
+      ctx.fillText('WareTrack - Systeme de suivi des camions', 210, 520);
+      ctx.textAlign = 'left';
       const link = document.createElement('a');
-      link.download = 'carte-chauffeur.png';
+      link.download = 'carte-' + (currentDriver.vehicle || 'chauffeur') + '.png';
       link.href = finalCanvas.toDataURL('image/png');
       link.click();
-    }
-    showToast('Carte téléchargée');
+      showToast('Carte telechargee');
+    };
+    qrImage.onerror = () => showToast('Erreur QR', true);
+    qrImage.src = getQRUrl(currentDriver.qr_code, qrSize);
   }
 
-  // ========== DRIVER : SCANNER UN DOCK ==========
+    // ========== DRIVER : SCANNER UN DOCK ==========
   let driverQrScanner = null, driverScannedDock = null;
 
   function openDriverScanner() {
@@ -956,10 +930,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!docks) return;
     for (const dk of docks) {
       const wrap = document.createElement('div'); wrap.className = 'qr-wrapper'; wrap.style.cssText = 'min-width:160px;max-width:200px;';
-      const cv  = document.createElement('canvas');
+      const img = document.createElement('img');
+      img.src = getQRUrl(dk.qr_code, 140);
+      img.alt = dk.name;
+      img.style.cssText = 'width:140px;height:140px;border-radius:6px;display:block;';
       const lbl = document.createElement('div'); lbl.className = 'qr-id'; lbl.textContent = dk.name;
-      wrap.appendChild(cv); wrap.appendChild(lbl); container.appendChild(wrap);
-      generateQR(cv, dk.qr_code, 140);
+      wrap.appendChild(img); wrap.appendChild(lbl); container.appendChild(wrap);
     }
   }
 
@@ -1108,15 +1084,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!docks) return;
     for (const dk of docks) {
       const wrap  = document.createElement('div'); wrap.className = 'card'; wrap.style.cssText = 'min-width:200px;max-width:240px;text-align:center;';
-      const cv    = document.createElement('canvas');
+      const img   = document.createElement('img');
+      img.src = getQRUrl(dk.qr_code, 150);
+      img.alt = dk.name;
+      img.style.cssText = 'width:150px;height:150px;border-radius:6px;display:block;margin:0 auto 0.5rem;';
       const nm    = document.createElement('div'); nm.style.cssText = 'font-size:0.8rem;font-weight:500;margin-bottom:0.5rem;'; nm.textContent = dk.name;
       const id    = document.createElement('div'); id.className = 'qr-id'; id.textContent = dk.qr_code;
       const dlBtn = document.createElement('button'); dlBtn.className = 'btn sm'; dlBtn.textContent = 'Télécharger'; dlBtn.style.marginTop = '0.75rem';
-      const cvId  = 'dock-canvas-' + dk.id; cv.id = cvId;
-      dlBtn.onclick = () => downloadQR(cvId, dk.name);
-      wrap.appendChild(nm); wrap.appendChild(cv); wrap.appendChild(id); wrap.appendChild(dlBtn);
+      dlBtn.onclick = () => {
+        const link = document.createElement('a');
+        link.href = getQRUrl(dk.qr_code, 300);
+        link.download = dk.name + '.png';
+        link.target = '_blank';
+        link.click();
+      };
+      wrap.appendChild(nm); wrap.appendChild(img); wrap.appendChild(id); wrap.appendChild(dlBtn);
       grid.appendChild(wrap);
-      generateQR(cv, dk.qr_code, 150);
     }
   }
 
@@ -1135,7 +1118,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('qr-view-title').textContent = title;
     document.getElementById('qr-view-id').textContent    = qrCode;
     document.getElementById('qr-view-modal').classList.add('open');
-    setTimeout(() => generateQR(document.getElementById('qr-view-canvas'), qrCode, 200), 50);
+    // ✅ Google Charts API
+    const img = document.getElementById('qr-view-img');
+    if (img) img.src = getQRUrl(qrCode, 220);
   }
 
   function closeQRView() { document.getElementById('qr-view-modal').classList.remove('open'); }
