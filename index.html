@@ -474,68 +474,97 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `<span class="badge ${status}">${map[status] || status}</span>`;
   }
 
-// ✅ Nouvelle version robuste et nettoyée pour générer le QR Code
-  function generateQR(canvasId, text, size = 180) {
+function generateQR(canvasId, text, size = 180) {
     const canvas = document.getElementById(canvasId);
-    if (!canvas || !text) {
-      console.warn("Canvas ou texte manquant pour le QR Code.");
-      return;
-    }
+    if (!canvas || !text) return;
 
-    // 1. Forcer les dimensions exactes du canvas
-    canvas.width = size;
-    canvas.height = size;
-    canvas.style.width = size + 'px';
-    canvas.style.height = size + 'px';
-
-    // 2. Vérifier si la librairie QRCode est bien chargée
+    // 1. On vérifie si la librairie est là
     if (typeof QRCode === 'undefined') {
-      console.error("Erreur : La librairie QRCode n'est pas encore chargée.");
-      setTimeout(() => generateQR(canvasId, text, size), 500);
-      return;
+        console.error("Erreur : La librairie QRCode n'est pas chargée.");
+        return;
     }
 
-    // 3. Générer l'image en Data URL (évite les bugs d'affichage de toCanvas)
-    QRCode.toDataURL(text, {
-      width: size,
-      margin: 2,
-      color: {
-        dark: '#000000', // Points noirs
-        light: '#ffffff' // Fond blanc
-      }
-    })
-    .then(url => {
-      // 4. Dessiner le QR code sur le canvas
-      const img = new Image();
-      img.onload = () => {
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, size, size);
-        ctx.drawImage(img, 0, 0, size, size);
-      };
-      img.src = url;
-    })
-    .catch(err => {
-      console.error("Erreur critique lors de la génération du QR Code :", err);
+    // 2. On utilise 'toCanvas' qui est DIRECT et immédiat
+    // Pas besoin de 'new Image()' ou de 'onload'
+    QRCode.toCanvas(canvas, text, {
+        width: size,
+        margin: 2,
+        color: {
+            dark: '#000000',  // Noir
+            light: '#ffffff' // Fond blanc OPAQUE (très important pour le téléchargement)
+        }
+    }, function (error) {
+        if (error) console.error("Erreur lors de la génération :", error);
+        else console.log("QR Code généré avec succès !");
     });
-  }
+}
 
     // ✅ Télécharger QR depuis un texte
-  async function downloadQR(qrText, filename) {
-    try {
-      const url = await getQRDataUrl(qrText, 400);
-      const link = document.createElement('a');
-      link.href = url; link.download = (filename || 'qr-code') + '.png'; link.click();
-      showToast('QR téléchargé');
-    } catch(e) { showToast('Erreur téléchargement QR', true); }
-  }
+ async function downloadDriverCard() {
+  if (!currentDriver) return;
+  showToast('Génération de la carte...');
+  
+  try {
+    const mainCanvas = document.getElementById('driver-qr-canvas');
+    if (!mainCanvas) {
+      showToast("Erreur : Canvas introuvable", true);
+      return;
+    }
 
-  // ✅ Télécharger QR depuis le modal (utilise le canvas rendu)
-  async function downloadQRById() {
-    const qrText = document.getElementById('qr-view-id')?.textContent;
-    const title  = document.getElementById('qr-view-title')?.textContent || 'qr-code';
-    if (!qrText) return;
-    await downloadQR(qrText, title.replace(/[^a-zA-Z0-9-_]/g, '-'));
+    // On crée la carte finale
+    const finalCanvas = document.createElement('canvas');
+    finalCanvas.width  = 420;
+    finalCanvas.height = 580;
+    const ctx = finalCanvas.getContext('2d');
+
+    // 1. Fond de la carte
+    const grad = ctx.createLinearGradient(0, 0, 420, 580);
+    grad.addColorStop(0, '#0d1f14'); grad.addColorStop(0.5, '#0a1628'); grad.addColorStop(1, '#0d1f14');
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.roundRect(0, 0, 420, 580, 20); ctx.fill();
+
+    // 2. Bordure
+    ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // 3. Textes (Nom, Véhicule, etc.)
+    ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 26px sans-serif'; ctx.fillText('Ware', 30, 58);
+    ctx.fillStyle = '#00e5a0'; ctx.fillText('Truck', 103, 58);
+    ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 24px sans-serif';
+    ctx.fillText(currentProfile?.name || '-', 30, 115);
+    ctx.fillStyle = '#6b7491'; ctx.font = '15px sans-serif';
+    ctx.fillText('Véhicule : ' + (currentDriver?.vehicle || '-'), 30, 145);
+
+    // 4. LE QR CODE
+    const qrSize = 260;
+    const qrX = 80;
+    const qrY = 175;
+
+    // Dessiner un fond blanc propre sous le QR
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.roundRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 14); ctx.fill();
+
+    // Capturer le QR code du profil et le dessiner
+    // Note: on utilise drawImage directement avec le canvas source
+    ctx.drawImage(mainCanvas, qrX, qrY, qrSize, qrSize);
+
+    // 5. Footer et Code texte
+    ctx.fillStyle = '#6b7491'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    ctx.fillText(currentDriver.qr_code, 210, 465);
+    ctx.fillText("Présentez cette carte à l'opérateur du dock", 210, 510);
+
+    // Téléchargement
+    const link = document.createElement('a');
+    link.download = `carte-waretruck-${currentDriver.vehicle}.png`;
+    link.href = finalCanvas.toDataURL('image/png');
+    link.click();
+    showToast('Carte téléchargée ✅');
+
+  } catch(e) {
+    console.error(e);
+    showToast('Erreur lors du téléchargement', true);
   }
+}
 
   // ==================== AUTH ====================
   async function doLogin() {
