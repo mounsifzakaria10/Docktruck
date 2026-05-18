@@ -497,64 +497,75 @@ function generateQR(canvasId, text, size = 180) {
   showToast('Génération de la carte...');
   
   try {
+    // 1. ON RÉCUPÈRE LE QR CODE DÉJÀ AFFICHÉ SUR L'ÉCRAN
     const mainCanvas = document.getElementById('driver-qr-canvas');
     if (!mainCanvas) {
-      showToast("Erreur : Canvas introuvable", true);
+      showToast("Le QR Code n'est pas encore généré à l'écran", true);
       return;
     }
 
-    // On crée la carte finale
+    // 2. ON CRÉE UN CANVAS TEMPORAIRE POUR DESSINER LA CARTE ENTIÈRE
     const finalCanvas = document.createElement('canvas');
     finalCanvas.width  = 420;
     finalCanvas.height = 580;
     const ctx = finalCanvas.getContext('2d');
 
-    // 1. Fond de la carte
+    // --- DÉBUT DU DESSIN DE LA CARTE ---
+
+    // Fond dégradé sombre (Style WareTruck)
     const grad = ctx.createLinearGradient(0, 0, 420, 580);
     grad.addColorStop(0, '#0d1f14'); grad.addColorStop(0.5, '#0a1628'); grad.addColorStop(1, '#0d1f14');
     ctx.fillStyle = grad;
     ctx.beginPath(); ctx.roundRect(0, 0, 420, 580, 20); ctx.fill();
 
-    // 2. Bordure
+    // Bordure verte néon
     ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 2;
     ctx.stroke();
 
-    // 3. Textes (Nom, Véhicule, etc.)
+    // Logo WareTruck en haut
     ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 26px sans-serif'; ctx.fillText('Ware', 30, 58);
     ctx.fillStyle = '#00e5a0'; ctx.fillText('Truck', 103, 58);
+
+    // Badge "CHAUFFEUR"
+    ctx.fillStyle = '#00e5a0'; ctx.beginPath(); ctx.roundRect(300, 36, 90, 24, 5); ctx.fill();
+    ctx.fillStyle = '#000000'; ctx.font = 'bold 11px sans-serif'; ctx.fillText('CHAUFFEUR', 306, 53);
+
+    // Nom du chauffeur et Véhicule
     ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 24px sans-serif';
     ctx.fillText(currentProfile?.name || '-', 30, 115);
     ctx.fillStyle = '#6b7491'; ctx.font = '15px sans-serif';
     ctx.fillText('Véhicule : ' + (currentDriver?.vehicle || '-'), 30, 145);
 
-    // 4. LE QR CODE
-    const qrSize = 260;
-    const qrX = 80;
+    // 3. COLLER LE QR CODE (C'est ici que la magie opère)
+    const qrSize = 260; 
+    const qrX = 80; 
     const qrY = 175;
 
-    // Dessiner un fond blanc propre sous le QR
+    // On dessine d'abord un fond blanc propre pour le QR Code
     ctx.fillStyle = '#ffffff';
     ctx.beginPath(); ctx.roundRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 14); ctx.fill();
 
-    // Capturer le QR code du profil et le dessiner
-    // Note: on utilise drawImage directement avec le canvas source
+    // ON COPIE LE CANVAS DE L'ÉCRAN VERS LA CARTE
     ctx.drawImage(mainCanvas, qrX, qrY, qrSize, qrSize);
 
-    // 5. Footer et Code texte
-    ctx.fillStyle = '#6b7491'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+    // Texte en bas de la carte
+    ctx.fillStyle = '#6b7491'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
     ctx.fillText(currentDriver.qr_code, 210, 465);
+    ctx.font = '12px sans-serif';
     ctx.fillText("Présentez cette carte à l'opérateur du dock", 210, 510);
 
-    // Téléchargement
+    // --- FIN DU DESSIN ---
+
+    // 4. DÉCLENCHER LE TÉLÉCHARGEMENT
     const link = document.createElement('a');
-    link.download = `carte-waretruck-${currentDriver.vehicle}.png`;
+    link.download = 'carte-chauffeur-' + (currentDriver.vehicle || 'id') + '.png';
     link.href = finalCanvas.toDataURL('image/png');
     link.click();
+    
     showToast('Carte téléchargée ✅');
-
   } catch(e) {
     console.error(e);
-    showToast('Erreur lors du téléchargement', true);
+    showToast('Erreur lors de la génération de la carte', true);
   }
 }
 
