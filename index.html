@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WareTrack — Suivi des camions</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -275,9 +274,10 @@
               </div>
               <div class="qr-card-name" id="qr-card-name">—</div>
               <div class="qr-card-vehicle" id="qr-card-vehicle">—</div>
-              <div class="qr-card-qr">
-                <canvas id="driver-qr-canvas" style="border-radius:8px; background:#fff;"></canvas>
-              </div>
+              <!-- Après (Nouvelle version avec l'image Google) -->
+<div class="qr-card-qr">
+  <img id="driver-qr-img" style="border-radius:8px; background:#fff; width:200px; height:200px;" src="">
+</div>
               <div class="qr-card-code" id="driver-qr-label">—</div>
               <div class="qr-card-footer">Présentez cette carte à l'opérateur du dock</div>
             </div>
@@ -474,86 +474,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `<span class="badge ${status}">${map[status] || status}</span>`;
   }
 
-  // ✅ generateQR — robuste, attend que QRCode soit dispo et canvas dans le DOM
-  function generateQR(canvas, text, size) {
-    size = size || 180;
-    if (!canvas || !text) return;
-    if (!window.QRCode) {
-      setTimeout(() => generateQR(canvas, text, size), 500);
-      return;
-    }
-    // Forcer les dimensions AVANT toCanvas
-    canvas.width  = size;
-    canvas.height = size;
-    canvas.style.width  = size + 'px';
-    canvas.style.height = size + 'px';
 
-    // Utiliser requestAnimationFrame pour s'assurer que le canvas est rendu
-    requestAnimationFrame(() => {
-      QRCode.toCanvas(canvas, text, {
-        width: size,
-        margin: 3,
-        color: { dark: '#000000', light: '#ffffff' }
-      }, function(err) {
-        if (err) {
-          console.warn('QR toCanvas error:', err);
-          // Fallback : dessiner via Image + DataURL
-          getQRDataUrl(text, size).then(url => {
-            const img = new Image();
-            img.onload = () => {
-              canvas.width  = size;
-              canvas.height = size;
-              const ctx = canvas.getContext('2d');
-              ctx.fillStyle = '#ffffff';
-              ctx.fillRect(0, 0, size, size);
-              ctx.drawImage(img, 0, 0, size, size);
-            };
-            img.src = url;
-          }).catch(e => console.warn('QR fallback error:', e));
-        }
-      });
-    });
-  }
-
-  // ✅ getQRDataUrl — canvas hors-écran, retourne Promise<dataURL>
-  function getQRDataUrl(text, size) {
-    size = size || 240;
-    return new Promise(function(resolve, reject) {
-      if (!window.QRCode) {
-        // Attendre que QRCode soit chargé (max 3s)
-        let tries = 0;
-        const wait = setInterval(() => {
-          tries++;
-          if (window.QRCode) {
-            clearInterval(wait);
-            getQRDataUrl(text, size).then(resolve).catch(reject);
-          } else if (tries > 30) {
-            clearInterval(wait);
-            reject(new Error('QRCode library not loaded'));
-          }
-        }, 100);
-        return;
-      }
-      const tmp = document.createElement('canvas');
-      tmp.width  = size;
-      tmp.height = size;
-      // Attacher temporairement au DOM (nécessaire dans certains navigateurs)
-      tmp.style.position = 'absolute';
-      tmp.style.left     = '-9999px';
-      tmp.style.top      = '-9999px';
-      document.body.appendChild(tmp);
-      QRCode.toCanvas(tmp, text, {
-        width: size,
-        margin: 3,
-        color: { dark: '#000000', light: '#ffffff' }
-      }, function(err) {
-        const url = tmp.toDataURL('image/png');
-        document.body.removeChild(tmp);
-        if (err) { reject(err); return; }
-        resolve(url);
-      });
-    });
-  }
+ 
+  
 
     // ✅ Télécharger QR depuis un texte
   async function downloadQR(qrText, filename) {
@@ -759,10 +682,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (document.getElementById('qr-card-vehicle')) document.getElementById('qr-card-vehicle').textContent = '🚛 ' + d.vehicle;
     // ✅ generateQR — délai pour s'assurer que le canvas est rendu dans le DOM
     document.getElementById('driver-qr-label').textContent = d.qr_code;
-    setTimeout(() => {
-      const qrCanvas = document.getElementById('driver-qr-canvas');
-      if (qrCanvas) generateQR(qrCanvas, d.qr_code, 200);
-    }, 150);
+
+    const qrCodeText = d.qr_code; 
+const googleApiUrl = `https://chart.googleapis.com/chart?cht=qr&chs=250x250&chl=${encodeURIComponent(qrCodeText)}`;
+document.getElementById('driver-qr-img').src = googleApiUrl;
 
     const { data: logs } = await supabase.from('logs').select('*, docks(name)').eq('driver_id', d.id);
     const active = logs?.find(l => l.status !== 'completed');
