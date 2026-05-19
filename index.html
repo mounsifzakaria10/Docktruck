@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WareTrack — Suivi des camions</title>
+<!-- qrcode CDN removed — using Google Charts API instead -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -198,7 +199,7 @@
 <!-- ==================== LOGIN SCREEN ==================== -->
 <div id="login-screen" class="screen active">
   <div class="login-box">
-    <div class="login-logo">Ware<span>Truck</span></div>
+    <div class="login-logo">Ware<span>Track</span></div>
     <div class="login-sub">Système de suivi des camions — Entrepôt</div>
     <div class="tabs">
       <button class="tab-btn active" onclick="switchAuthTab('login')">Connexion</button>
@@ -274,10 +275,9 @@
               </div>
               <div class="qr-card-name" id="qr-card-name">—</div>
               <div class="qr-card-vehicle" id="qr-card-vehicle">—</div>
-              <!-- Après (Nouvelle version avec l'image Google) -->
-<div class="qr-card-qr">
-  <img id="driver-qr-img" style="border-radius:8px; background:#fff; width:200px; height:200px;" src="">
-</div>
+              <div class="qr-card-qr">
+                <div id="driver-qr-container" style="width:200px;height:200px;"></div>
+              </div>
               <div class="qr-card-code" id="driver-qr-label">—</div>
               <div class="qr-card-footer">Présentez cette carte à l'opérateur du dock</div>
             </div>
@@ -419,7 +419,7 @@
   <div class="modal" style="text-align:center;">
     <div class="modal-title" id="qr-view-title">QR Code</div>
     <div class="qr-wrapper">
-      <canvas id="qr-view-canvas" style="border-radius:8px; background:#fff; display:block; margin:0 auto;"></canvas>
+      <div id="qr-view-container" style="width:220px;height:220px;margin:0 auto;"></div>
       <div class="qr-id" id="qr-view-id"></div>
     </div>
     <button class="btn sm" style="margin-top:1rem;" onclick="downloadQRById()">Télécharger</button>
@@ -474,9 +474,86 @@ document.addEventListener('DOMContentLoaded', async () => {
     return `<span class="badge ${status}">${map[status] || status}</span>`;
   }
 
+  // ✅ QR via Google Charts API — img tag direct, aucune librairie, aucun CORS
+  function qrUrl(text, size) {
+    size = size || 200;
+    return 'https://chart.apis.google.com/chart?cht=qr&chs=' + size + 'x' + size + '&chl=' + encodeURIComponent(text) + '&choe=UTF-8&chld=H|2';
+  }
 
- 
-  
+  function generateQR(canvas, text, size) {
+    // canvas param gardé pour compatibilité mais on crée un <img> à la place
+    size = size || 200;
+    if (!canvas || !text) return;
+    const parent = canvas.parentNode;
+    if (!parent) return;
+    // Créer img Google Charts
+    const img = document.createElement('img');
+    img.src   = qrUrl(text, size);
+    img.width  = size;
+    img.height = size;
+    img.alt    = 'QR Code';
+    img.style.cssText = 'border-radius:6px; display:block; background:#fff;';
+    img.onerror = () => { img.alt = 'QR indisponible'; };
+    // Remplacer le canvas par l img
+    parent.replaceChild(img, canvas);
+    // Garder référence sur l img pour usage ultérieur
+    canvas._replacedBy = img;
+  }
+
+  // generateQRInto — injecte un img QR dans un élément conteneur
+  function generateQRInto(containerId, text, size) {
+    size = size || 200;
+    const container = document.getElementById(containerId);
+    if (!container || !text) return;
+    container.innerHTML = '';
+    const img = document.createElement('img');
+    img.src    = qrUrl(text, size);
+    img.width  = size;
+    img.height = size;
+    img.alt    = 'QR Code';
+    img.style.cssText = 'border-radius:6px; display:block; background:#fff;';
+    container.appendChild(img);
+  }
+
+  // getQRDataUrl — charge l img Google Charts puis la transfère sur canvas offscreen
+  function getQRDataUrl(text, size) {
+    size = size || 260;
+    return new Promise(function(resolve, reject) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        const tmp = document.createElement('canvas');
+        tmp.width  = size;
+        tmp.height = size;
+        const ctx  = tmp.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+        resolve(tmp.toDataURL('image/png'));
+      };
+      img.onerror = function() {
+        // Si crossOrigin bloque, essayer sans
+        const img2 = new Image();
+        img2.onload = function() {
+          const tmp = document.createElement('canvas');
+          tmp.width = size; tmp.height = size;
+          const ctx = tmp.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, size, size);
+          try {
+            ctx.drawImage(img2, 0, 0, size, size);
+            resolve(tmp.toDataURL('image/png'));
+          } catch(e) {
+            // Canvas tainted — retourner l URL directe comme fallback
+            resolve(qrUrl(text, size));
+          }
+        };
+        img2.onerror = () => reject(new Error('QR load failed'));
+        img2.src = qrUrl(text, size);
+      };
+      img.src = qrUrl(text, size);
+    });
+  }
 
     // ✅ Télécharger QR depuis un texte
   async function downloadQR(qrText, filename) {
@@ -680,12 +757,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Remplir la carte QR photo
     if (document.getElementById('qr-card-name'))    document.getElementById('qr-card-name').textContent    = u.name;
     if (document.getElementById('qr-card-vehicle')) document.getElementById('qr-card-vehicle').textContent = '🚛 ' + d.vehicle;
-    // ✅ generateQR — délai pour s'assurer que le canvas est rendu dans le DOM
+    // ✅ Google Charts img directement dans le container
     document.getElementById('driver-qr-label').textContent = d.qr_code;
-
-    const qrCodeText = d.qr_code; 
-
-document.getElementById('driver-qr-img').src = `https://chart.googleapis.com/chart?cht=qr&chs=300x300&chl=${encodeURIComponent(qrCodeText)}`;
+    generateQRInto('driver-qr-container', d.qr_code, 200);
 
     const { data: logs } = await supabase.from('logs').select('*, docks(name)').eq('driver_id', d.id);
     const active = logs?.find(l => l.status !== 'completed');
@@ -941,12 +1015,13 @@ document.getElementById('driver-qr-img').src = `https://chart.googleapis.com/cha
     if (!docks) return;
     for (const dk of docks) {
       const wrap = document.createElement('div'); wrap.className = 'qr-wrapper'; wrap.style.cssText = 'min-width:160px;max-width:200px;';
-      const cv = document.createElement('canvas');
-      cv.style.cssText = 'border-radius:6px;display:block;background:#fff;';
-      generateQR(cv, dk.qr_code, 140);
-      const img = cv; // alias pour compatibilité
+      const img = document.createElement('div');
+      img.style.cssText = 'width:140px;height:140px;border-radius:6px;display:block;';
+      const dkId = 'dock-qr-' + dk.id;
+      img.id = dkId;
       const lbl = document.createElement('div'); lbl.className = 'qr-id'; lbl.textContent = dk.name;
       wrap.appendChild(img); wrap.appendChild(lbl); container.appendChild(wrap);
+      generateQRInto(dkId, dk.qr_code, 140);
     }
   }
 
@@ -1095,20 +1170,22 @@ document.getElementById('driver-qr-img').src = `https://chart.googleapis.com/cha
     if (!docks) return;
     for (const dk of docks) {
       const wrap  = document.createElement('div'); wrap.className = 'card'; wrap.style.cssText = 'min-width:200px;max-width:240px;text-align:center;';
-      const img   = document.createElement('canvas');
-      img.style.cssText = 'border-radius:6px;display:block;margin:0 auto 0.5rem;background:#fff;';
-      generateQR(img, dk.qr_code, 150);
+      const dkContainerId = 'admin-dock-qr-' + dk.id;
+      const qrDiv = document.createElement('div');
+      qrDiv.id = dkContainerId;
+      qrDiv.style.cssText = 'width:150px;height:150px;margin:0 auto 0.5rem;border-radius:6px;overflow:hidden;';
       const nm    = document.createElement('div'); nm.style.cssText = 'font-size:0.8rem;font-weight:500;margin-bottom:0.5rem;'; nm.textContent = dk.name;
       const id    = document.createElement('div'); id.className = 'qr-id'; id.textContent = dk.qr_code;
       const dlBtn = document.createElement('button'); dlBtn.className = 'btn sm'; dlBtn.textContent = 'Télécharger'; dlBtn.style.marginTop = '0.75rem';
       dlBtn.onclick = () => {
-        getQRDataUrl(dk.qr_code, 400).then(url => {
-          const link = document.createElement('a');
-          link.href = url; link.download = dk.name + '.png'; link.click();
-        });
+        const directUrl = qrUrl(dk.qr_code, 400);
+        const link = document.createElement('a');
+        link.href = directUrl; link.download = dk.name + '.png';
+        link.target = '_blank'; link.click();
       };
-      wrap.appendChild(nm); wrap.appendChild(img); wrap.appendChild(id); wrap.appendChild(dlBtn);
+      wrap.appendChild(nm); wrap.appendChild(qrDiv); wrap.appendChild(id); wrap.appendChild(dlBtn);
       grid.appendChild(wrap);
+      generateQRInto(dkContainerId, dk.qr_code, 150);
     }
   }
 
@@ -1127,9 +1204,758 @@ document.getElementById('driver-qr-img').src = `https://chart.googleapis.com/cha
     document.getElementById('qr-view-title').textContent = title;
     document.getElementById('qr-view-id').textContent    = qrCode;
     document.getElementById('qr-view-modal').classList.add('open');
-    // ✅ generateQR sur canvas
-    const cv = document.getElementById('qr-view-canvas');
-    if (cv) setTimeout(() => generateQR(cv, qrCode, 220), 80);
+    // ✅ Google Charts img dans le container
+    generateQRInto('qr-view-container', qrCode, 220);
+  }
+
+  function closeQRView() { document.getElementById('qr-view-modal').classList.remove('open'); }
+
+  // ==================== EVENT LISTENERS ====================
+  document.getElementById('scanner-modal').addEventListener('click', function(e) { if (e.target === this) closeScanner(); });
+  document.getElementById('qr-view-modal').addEventListener('click', function(e) { if (e.target === this) closeQRView(); });
+  document.getElementById('reg-role').addEventListener('change', function() {
+    document.getElementById('reg-vehicle-field').style.display = this.value === 'driver' ? 'block' : 'none';
+  });
+  document.getElementById('reg-role').dispatchEvent(new Event('change'));
+
+  // ==================== EXPOSITION GLOBALE ====================
+  // Nécessaire car les onclick= dans le HTML ne voient pas les fonctions dans DOMContentLoaded
+  window.doLogin            = doLogin;
+  window.doRegister         = doRegister;
+  window.doLogout           = doLogout;
+  window.quickLogin         = quickLogin;
+  window.switchAuthTab      = switchAuthTab;
+  window.goTo               = goTo;
+  window.toggleSidebar      = toggleSidebar;
+  window.closeSidebar       = closeSidebar;
+  window.openScanner        = openScanner;
+  window.closeScanner       = closeScanner;
+  window.submitManualQR     = submitManualQR;
+  window.resetScan          = resetScan;
+  window.recordEntry        = recordEntry;
+  window.recordExit         = recordExit;
+  window.addDock            = addDock;
+  window.downloadQR         = downloadQR;
+  window.showQRView         = showQRView;
+  window.closeQRView        = closeQRView;
+  window.exportCSV          = exportCSV;
+  window.renderAdminLogs    = renderAdminLogs;
+  window.downloadDriverCard = downloadDriverCard;
+  window.downloadQRById     = downloadQRById;
+  window.openDriverScanner  = openDriverScanner;
+  window.driverSubmitManual = driverSubmitManual;
+  window.driverRecordEntry  = driverRecordEntry;
+  window.driverRecordExit   = driverRecordExit;
+  window.driverResetScan    = driverResetScan;
+
+  // ==================== SESSION AU DÉMARRAGE ====================
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) await loadUserData(session.user);
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    if (session && !currentUser) loadUserData(session.user);
+  });
+
+}); // ← fin DOMContentLoaded
+</script>
+</body>
+</html>  // ✅ Google Charts QR — <img> direct, pas de librairie, pas de CORS
+  function generateQR(canvas, text, size) {
+    size = size || 180;
+    if (!canvas || !text) return;
+    // Remplacer le canvas par un img dans le parent
+    const img = document.createElement('img');
+    img.src = 'https://chart.apis.google.com/chart?cht=qr&chs=' + size + 'x' + size + '&chl=' + encodeURIComponent(text) + '&choe=UTF-8&chld=H|2';
+    img.alt = 'QR Code';
+    img.width  = size;
+    img.height = size;
+    img.style.cssText = 'border-radius:8px; display:block; background:#fff;';
+    img.onerror = () => { img.alt = 'QR indisponible'; };
+    if (canvas.parentNode) {
+      canvas.parentNode.replaceChild(img, canvas);
+    }
+    return img;
+  }
+
+  // ✅ getQRDataUrl — charge img Google Charts dans un canvas pour export PNG
+  function getQRDataUrl(text, size) {
+    size = size || 240;
+    return new Promise(function(resolve, reject) {
+      const url = 'https://chart.apis.google.com/chart?cht=qr&chs=' + size + 'x' + size + '&chl=' + encodeURIComponent(text) + '&choe=UTF-8&chld=H|2';
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        const tmp = document.createElement('canvas');
+        tmp.width  = size;
+        tmp.height = size;
+        const ctx = tmp.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+        resolve(tmp.toDataURL('image/png'));
+      };
+      img.onerror = function() { reject(new Error('QR image load failed')); };
+      img.src = url;
+    });
+  }
+
+  // ✅ getQRUrl — retourne l URL directe Google Charts
+  function getQRUrl(text, size) {
+    size = size || 200;
+    return 'https://chart.apis.google.com/chart?cht=qr&chs=' + size + 'x' + size + '&chl=' + encodeURIComponent(text) + '&choe=UTF-8&chld=H|2';
+  }
+
+    // ✅ Télécharger QR depuis un texte
+  async function downloadQR(qrText, filename) {
+    try {
+      const url = await getQRDataUrl(qrText, 400);
+      const link = document.createElement('a');
+      link.href = url; link.download = (filename || 'qr-code') + '.png'; link.click();
+      showToast('QR téléchargé');
+    } catch(e) { showToast('Erreur téléchargement QR', true); }
+  }
+
+  // ✅ Télécharger QR depuis le modal (utilise le canvas rendu)
+  async function downloadQRById() {
+    const qrText = document.getElementById('qr-view-id')?.textContent;
+    const title  = document.getElementById('qr-view-title')?.textContent || 'qr-code';
+    if (!qrText) return;
+    await downloadQR(qrText, title.replace(/[^a-zA-Z0-9-_]/g, '-'));
+  }
+
+  // ==================== AUTH ====================
+  async function doLogin() {
+    const email    = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-pass').value;
+    if (!email || !password) { showMsg('login-msg', 'Remplissez email et mot de passe.', 'error'); return; }
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { showMsg('login-msg', error.message, 'error'); return; }
+    await loadUserData(data.user);
+  }
+
+  async function quickLogin(email, pwd) {
+    document.getElementById('login-email').value = email;
+    document.getElementById('login-pass').value  = pwd;
+    await doLogin();
+  }
+
+  async function doRegister() {
+    const name     = document.getElementById('reg-name').value.trim();
+    const email    = document.getElementById('reg-email').value.trim();
+    const phone    = document.getElementById('reg-phone').value.trim();
+    const password = document.getElementById('reg-pass').value;
+    const role     = document.getElementById('reg-role').value;
+    const vehicle  = document.getElementById('reg-vehicle').value.trim();
+
+    if (!name || !email || !password) { showMsg('reg-msg', 'Remplissez tous les champs obligatoires.', 'error'); return; }
+    if (password.length < 6)          { showMsg('reg-msg', 'Mot de passe trop court (min 6).', 'error'); return; }
+
+    showMsg('reg-msg', 'Création du compte...', 'success');
+
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email, password, options: { data: { name, phone, role } }
+    });
+
+    if (signUpError) { showMsg('reg-msg', signUpError.message, 'error'); return; }
+
+    // Si email confirmation activée, user peut être null
+    if (!signUpData.user) {
+      showMsg('reg-msg', 'Vérifiez votre email pour confirmer le compte puis connectez-vous.', 'success');
+      return;
+    }
+
+    if (role === 'driver') {
+      showMsg('reg-msg', 'Configuration du profil chauffeur...', 'success');
+      // ✅ Attendre que le trigger SQL crée le profil dans public.profiles
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      const qrCode = `DRIVER-${signUpData.user.id}-${Date.now()}`;
+      const { error: driverError } = await supabase.from('drivers').insert([{
+        user_id: signUpData.user.id,
+        vehicle: vehicle || 'N/A',
+        qr_code: qrCode,
+        status:  'waiting'
+      }]);
+
+      if (driverError) {
+        showMsg('reg-msg', 'Erreur profil chauffeur : ' + driverError.message, 'error');
+        return;
+      }
+    }
+
+    showMsg('reg-msg', 'Compte créé ! Connectez-vous.', 'success');
+    setTimeout(() => switchAuthTab('login'), 1500);
+  }
+
+  async function loadUserData(user) {
+    if (!user) return;
+    currentUser = user;
+
+    const { data: profile } = await supabase
+      .from('profiles').select('*').eq('id', user.id).single();
+
+    // ✅ Retry si le trigger SQL n'a pas encore créé le profil
+    if (!profile) {
+      await new Promise(r => setTimeout(r, 1000));
+      return loadUserData(user);
+    }
+
+    currentProfile = profile;
+
+    if (profile.role === 'driver') {
+      const { data: driver } = await supabase
+        .from('drivers').select('*').eq('user_id', user.id).single();
+      currentDriver = driver;
+    }
+
+    document.getElementById('login-screen').classList.remove('active');
+    document.getElementById('app-screen').classList.add('active');
+    setupNav();
+  }
+
+  async function doLogout() {
+    await supabase.auth.signOut();
+    currentUser = null; currentProfile = null; currentDriver = null;
+    document.getElementById('app-screen').classList.remove('active');
+    document.getElementById('login-screen').classList.add('active');
+    showToast('Déconnecté');
+  }
+
+  function switchAuthTab(tab) {
+    document.getElementById('form-login').style.display    = tab === 'login'    ? 'block' : 'none';
+    document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
+    document.querySelectorAll('.tab-btn').forEach((b, i) =>
+      b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'))
+    );
+  }
+
+  // ==================== NAVIGATION ====================
+  const navConfig = {
+    driver: [
+      { id: 'driver-profile', label: 'Mon profil & QR',  icon: '<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
+      { id: 'driver-logs',    label: 'Mes passages',      icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>' }
+    ],
+    operator: [
+      { id: 'operator-scan', label: 'Scanner QR', icon: '<path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/>' }
+    ],
+    admin: [
+      { id: 'admin-dashboard', label: 'Dashboard',      icon: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>' },
+      { id: 'admin-logs',      label: 'Tous les logs',  icon: '<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>' },
+      { id: 'admin-drivers',   label: 'Chauffeurs',     icon: '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>' },
+      { id: 'admin-docks',     label: 'Docks',          icon: '<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>' }
+    ]
+  };
+
+  function setupNav() {
+    if (!currentProfile) return;
+    const role = currentProfile.role;
+    document.getElementById('sidebar-role-label').textContent  = { driver: 'Chauffeur', operator: 'Opérateur', admin: 'Administrateur' }[role];
+    document.getElementById('sidebar-username').textContent    = currentProfile.name;
+    document.getElementById('sidebar-email-disp').textContent  = currentUser.email;
+    document.getElementById('nav-items').innerHTML = navConfig[role].map(n =>
+      `<div class="nav-item" id="nav-${n.id}" onclick="goTo('${n.id}')">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${n.icon}</svg>
+        ${n.label}
+      </div>`
+    ).join('');
+    goTo(navConfig[role][0].id);
+  }
+
+  function goTo(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const page    = document.getElementById('page-' + pageId);
+    const navItem = document.getElementById('nav-'  + pageId);
+    if (page)    page.classList.add('active');
+    if (navItem) navItem.classList.add('active');
+    closeSidebar();
+    if (pageId === 'driver-profile')   renderDriverProfile();
+    if (pageId === 'driver-logs')      renderDriverLogs();
+    if (pageId === 'operator-scan')    renderOperatorScan();
+    if (pageId === 'admin-dashboard')  renderAdminDashboard();
+    if (pageId === 'admin-logs')       renderAdminLogs();
+    if (pageId === 'admin-drivers')    renderAdminDrivers();
+    if (pageId === 'admin-docks')      renderAdminDocks();
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('nav-backdrop').classList.toggle('open');
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('nav-backdrop').classList.remove('open');
+  }
+
+  // ==================== DRIVER PAGES ====================
+  async function renderDriverProfile() {
+    if (!currentDriver) {
+      document.getElementById('driver-profile-header').innerHTML = '<p style="color:var(--muted)">Profil chauffeur non trouvé.</p>';
+      return;
+    }
+    const u = currentProfile, d = currentDriver;
+    const initials = u.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    document.getElementById('driver-profile-header').innerHTML =
+      `<div class="avatar">${initials}</div>
+       <div class="profile-info"><h2>${u.name}</h2><p>${u.email} · ${u.phone || '—'}</p></div>`;
+    document.getElementById('driver-info-grid').innerHTML =
+      `<div class="info-item"><label>Immatriculation</label><span>${d.vehicle}</span></div>
+       <div class="info-item"><label>Rôle</label><span>Chauffeur</span></div>
+       <div class="info-item"><label>ID Chauffeur</label><span>${d.id}</span></div>
+       <div class="info-item"><label>Code QR</label><span style="color:var(--muted);font-size:0.72rem;">${d.qr_code}</span></div>`;
+    // Remplir la carte QR photo
+    if (document.getElementById('qr-card-name'))    document.getElementById('qr-card-name').textContent    = u.name;
+    if (document.getElementById('qr-card-vehicle')) document.getElementById('qr-card-vehicle').textContent = '🚛 ' + d.vehicle;
+    // ✅ Google Charts img directement dans le container
+    document.getElementById('driver-qr-label').textContent = d.qr_code;
+    generateQRInto('driver-qr-container', d.qr_code, 200);
+
+    const { data: logs } = await supabase.from('logs').select('*, docks(name)').eq('driver_id', d.id);
+    const active = logs?.find(l => l.status !== 'completed');
+    document.getElementById('driver-status-display').innerHTML = active
+      ? `Statut actuel : ${badgeHtml(active.status)} — Dock : ${active.docks?.name || '—'}`
+      : `${badgeHtml('waiting')} — Aucun passage actif`;
+  }
+
+  // ========== TÉLÉCHARGER LA CARTE QR COMME IMAGE ==========
+  async function downloadDriverCard() {
+    if (!currentDriver) return;
+    showToast('Génération de la carte...');
+    try {
+      // ✅ qrcode.js DataURL — pas de CORS
+      const qrDataUrl = await getQRDataUrl(currentDriver.qr_code, 260);
+      const finalCanvas = document.createElement('canvas');
+      finalCanvas.width  = 420;
+      finalCanvas.height = 580;
+      const ctx = finalCanvas.getContext('2d');
+
+      // Fond dégradé sombre
+      const grad = ctx.createLinearGradient(0, 0, 420, 580);
+      grad.addColorStop(0, '#0d1f14'); grad.addColorStop(0.5, '#0a1628'); grad.addColorStop(1, '#0d1f14');
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.roundRect(0, 0, 420, 580, 20); ctx.fill();
+
+      // Bordure verte
+      ctx.strokeStyle = '#00e5a0'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(1, 1, 418, 578, 20); ctx.stroke();
+
+      // Logo
+      ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 26px sans-serif'; ctx.fillText('Ware', 30, 58);
+      ctx.fillStyle = '#00e5a0'; ctx.fillText('Track', 103, 58);
+
+      // Badge
+      ctx.fillStyle = '#00e5a0'; ctx.beginPath(); ctx.roundRect(300, 36, 90, 24, 5); ctx.fill();
+      ctx.fillStyle = '#000000'; ctx.font = 'bold 11px sans-serif'; ctx.fillText('CHAUFFEUR', 306, 53);
+
+      // Séparateur
+      ctx.strokeStyle = 'rgba(0,229,160,0.2)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(30, 75); ctx.lineTo(390, 75); ctx.stroke();
+
+      // Nom et véhicule
+      ctx.fillStyle = '#e8eaf2'; ctx.font = 'bold 24px sans-serif';
+      ctx.fillText(currentProfile?.name || '-', 30, 115);
+      ctx.fillStyle = '#6b7491'; ctx.font = '15px sans-serif';
+      ctx.fillText('Vehicule : ' + (currentDriver?.vehicle || '-'), 30, 145);
+
+      // QR Image (DataURL — pas de CORS)
+      const qrImg = new Image();
+      await new Promise((resolve) => {
+        qrImg.onload = resolve;
+        qrImg.src = qrDataUrl;
+      });
+      const qrSize = 260, qrX = 80, qrY = 175;
+      // Fond blanc arrondi pour le QR
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.roundRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20, 14); ctx.fill();
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
+
+      // Code
+      ctx.fillStyle = '#6b7491'; ctx.font = '9px monospace'; ctx.textAlign = 'center';
+      const code = currentDriver.qr_code || '';
+      ctx.fillText(code.length > 52 ? code.slice(0, 52) + '...' : code, 210, 465);
+
+      // Footer
+      ctx.strokeStyle = 'rgba(42,48,69,0.5)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(30, 485); ctx.lineTo(390, 485); ctx.stroke();
+      ctx.fillStyle = 'rgba(107,116,145,0.8)'; ctx.font = '12px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText("Presentez cette carte a l operateur du dock", 210, 510);
+      ctx.font = '10px sans-serif';
+      ctx.fillText('WareTrack — Systeme de suivi des camions', 210, 535);
+      ctx.textAlign = 'left';
+
+      const link = document.createElement('a');
+      link.download = 'carte-' + (currentDriver.vehicle || 'chauffeur') + '.png';
+      link.href = finalCanvas.toDataURL('image/png');
+      link.click();
+      showToast('Carte téléchargée ✅');
+    } catch(e) {
+      console.error(e);
+      showToast('Erreur génération carte', true);
+    }
+  }
+
+    // ========== DRIVER : SCANNER UN DOCK ==========
+  let driverQrScanner = null, driverScannedDock = null;
+
+  function openDriverScanner() {
+    const readerEl = document.getElementById('driver-qr-reader');
+    const manualEl = document.getElementById('driver-scan-manual');
+    readerEl.style.display = 'block';
+    manualEl.style.display = 'block';
+    if (driverQrScanner) { try { driverQrScanner.stop(); } catch(e) {} driverQrScanner = null; }
+    readerEl.innerHTML = '';
+    try {
+      driverQrScanner = new Html5Qrcode('driver-qr-reader');
+      driverQrScanner.start(
+        { facingMode: 'environment' },
+        { fps: 10, qrbox: 200 },
+        async (decodedText) => {
+          try { driverQrScanner.stop(); } catch(e) {}
+          driverQrScanner = null;
+          readerEl.style.display = 'none';
+          await driverProcessDockQR(decodedText);
+        },
+        () => {}
+      );
+    } catch(e) {
+      readerEl.innerHTML = '<p style="color:var(--muted);font-size:0.78rem;padding:1rem;">Caméra non disponible — saisie manuelle.</p>';
+    }
+  }
+
+  async function driverSubmitManual() {
+    const val = document.getElementById('driver-manual-qr').value.trim();
+    if (!val) { showToast('Entrez un code QR', true); return; }
+    document.getElementById('driver-qr-reader').style.display = 'none';
+    document.getElementById('driver-scan-manual').style.display = 'none';
+    await driverProcessDockQR(val);
+  }
+
+  async function driverProcessDockQR(code) {
+    const { data: dock } = await supabase.from('docks').select('*').eq('qr_code', code).single();
+    if (!dock) { showToast('QR dock non reconnu', true); return; }
+    driverScannedDock = dock;
+    document.getElementById('driver-scan-dock-name').textContent = '📍 ' + dock.name;
+    document.getElementById('driver-scan-result').style.display = 'block';
+    showToast('Dock identifié : ' + dock.name);
+  }
+
+  async function driverRecordEntry() {
+    if (!driverScannedDock || !currentDriver) return;
+    const { data: existing } = await supabase.from('logs').select('id')
+      .eq('driver_id', currentDriver.id).neq('status', 'completed').limit(1);
+    if (existing && existing.length) { showToast('Vous êtes déjà enregistré à l\'intérieur !', true); return; }
+    const { error } = await supabase.from('logs').insert([{
+      driver_id: currentDriver.id,
+      dock_id:   driverScannedDock.id,
+      status:    'arrived'
+    }]);
+    if (error) { showToast(error.message, true); return; }
+    await supabase.from('drivers').update({ status: 'arrived' }).eq('id', currentDriver.id);
+    showToast('✅ Entrée enregistrée au ' + driverScannedDock.name);
+    driverResetScan();
+    renderDriverProfile();
+  }
+
+  async function driverRecordExit() {
+    if (!driverScannedDock || !currentDriver) return;
+    const { data: log } = await supabase.from('logs').select('id, entry_time')
+      .eq('driver_id', currentDriver.id).neq('status', 'completed').limit(1).single();
+    if (!log) { showToast('Aucune entrée active trouvée', true); return; }
+    const exitTime = new Date().toISOString();
+    const duration = Math.round((new Date(exitTime) - new Date(log.entry_time)) / 60000);
+    const { error } = await supabase.from('logs').update({ exit_time: exitTime, status: 'completed', duration }).eq('id', log.id);
+    if (error) { showToast(error.message, true); return; }
+    await supabase.from('drivers').update({ status: 'waiting' }).eq('id', currentDriver.id);
+    showToast(`🚪 Sortie enregistrée — durée : ${fmtDur(duration)}`);
+    driverResetScan();
+    renderDriverProfile();
+  }
+
+  function driverResetScan() {
+    driverScannedDock = null;
+    if (driverQrScanner) { try { driverQrScanner.stop(); } catch(e) {} driverQrScanner = null; }
+    document.getElementById('driver-scan-result').style.display  = 'none';
+    document.getElementById('driver-qr-reader').style.display    = 'none';
+    document.getElementById('driver-scan-manual').style.display  = 'none';
+    if (document.getElementById('driver-manual-qr')) document.getElementById('driver-manual-qr').value = '';
+  }
+
+  async function renderDriverLogs() {
+    if (!currentDriver) return;
+    const { data: logs } = await supabase.from('logs').select('*, docks(name)')
+      .eq('driver_id', currentDriver.id).order('entry_time', { ascending: false });
+    const tbody = document.getElementById('driver-logs-tbody');
+    if (!logs || !logs.length) { tbody.innerHTML = '<tr><td colspan="5" class="no-data">Aucun passage</td></tr>'; return; }
+    tbody.innerHTML = logs.map(l =>
+      `<tr><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.duration)}</td><td>${badgeHtml(l.status)}</td></tr>`
+    ).join('');
+  }
+
+  // ==================== OPERATOR SCAN ====================
+  let scannedDriverObj = null, scannedDockObj = null;
+
+  async function renderOperatorScan() {
+    updateScanSteps();
+    await renderOperatorActive();
+    await renderDockQRs();
+  }
+
+  function updateScanSteps() {
+    document.getElementById('step1-card').classList.toggle('done', !!scannedDriverObj);
+    document.getElementById('step2-card').classList.toggle('done', !!scannedDockObj);
+    document.getElementById('step1-val').textContent = scannedDriverObj
+      ? `${scannedDriverObj.vehicle} — ${scannedDriverObj.profiles?.name || ''}` : 'En attente...';
+    document.getElementById('step2-val').textContent = scannedDockObj ? scannedDockObj.name : 'En attente...';
+    const box = document.getElementById('scan-result-box');
+    if (scannedDriverObj && scannedDockObj) {
+      box.style.display = 'block';
+      document.getElementById('scan-result-text').innerHTML =
+        `Chauffeur : <strong>${scannedDriverObj.profiles?.name}</strong> · Véhicule : <strong>${scannedDriverObj.vehicle}</strong><br>Dock : <strong>${scannedDockObj.name}</strong>`;
+    } else {
+      box.style.display = 'none';
+    }
+  }
+
+  function resetScan() { scannedDriverObj = null; scannedDockObj = null; updateScanSteps(); }
+
+  async function recordEntry() {
+    if (!scannedDriverObj || !scannedDockObj) return;
+    const { data: existing } = await supabase.from('logs').select('id')
+      .eq('driver_id', scannedDriverObj.id).neq('status', 'completed').limit(1);
+    if (existing && existing.length) { showToast('Ce chauffeur est déjà à l\'intérieur !', true); return; }
+    const { error } = await supabase.from('logs').insert([{ driver_id: scannedDriverObj.id, dock_id: scannedDockObj.id, status: 'arrived' }]);
+    if (error) { showToast(error.message, true); return; }
+    await supabase.from('drivers').update({ status: 'arrived' }).eq('id', scannedDriverObj.id);
+    showToast('Entrée enregistrée');
+    resetScan();
+    await renderOperatorActive();
+  }
+
+  async function recordExit() {
+    if (!scannedDriverObj || !scannedDockObj) return;
+    const { data: log } = await supabase.from('logs').select('id, entry_time')
+      .eq('driver_id', scannedDriverObj.id).neq('status', 'completed').limit(1).single();
+    if (!log) { showToast('Aucune entrée active', true); return; }
+    const exitTime = new Date().toISOString();
+    const duration = Math.round((new Date(exitTime) - new Date(log.entry_time)) / 60000);
+    const { error } = await supabase.from('logs').update({ exit_time: exitTime, status: 'completed', duration }).eq('id', log.id);
+    if (error) { showToast(error.message, true); return; }
+    await supabase.from('drivers').update({ status: 'waiting' }).eq('id', scannedDriverObj.id);
+    showToast(`Sortie enregistrée — durée : ${fmtDur(duration)}`);
+    resetScan();
+    await renderOperatorActive();
+  }
+
+  async function renderOperatorActive() {
+    const { data: logs } = await supabase.from('logs').select(`
+      *, drivers(vehicle, profiles!drivers_user_id_fkey(name)), docks(name)
+    `).neq('status', 'completed');
+    const tbody = document.getElementById('operator-active-tbody');
+    if (!logs || !logs.length) { tbody.innerHTML = '<tr><td colspan="5" class="no-data">Aucun camion actif</td></tr>'; return; }
+    tbody.innerHTML = logs.map(l =>
+      `<tr><td>${l.drivers?.profiles?.name || '—'}</td><td>${l.drivers?.vehicle || '—'}</td><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${badgeHtml(l.status)}</td></tr>`
+    ).join('');
+  }
+
+  async function renderDockQRs() {
+    const { data: docks } = await supabase.from('docks').select('*');
+    const container = document.getElementById('dock-qr-list');
+    container.innerHTML = '';
+    if (!docks) return;
+    for (const dk of docks) {
+      const wrap = document.createElement('div'); wrap.className = 'qr-wrapper'; wrap.style.cssText = 'min-width:160px;max-width:200px;';
+      const img = document.createElement('div');
+      img.style.cssText = 'width:140px;height:140px;border-radius:6px;display:block;';
+      const dkId = 'dock-qr-' + dk.id;
+      img.id = dkId;
+      const lbl = document.createElement('div'); lbl.className = 'qr-id'; lbl.textContent = dk.name;
+      wrap.appendChild(img); wrap.appendChild(lbl); container.appendChild(wrap);
+      generateQRInto(dkId, dk.qr_code, 140);
+    }
+  }
+
+  // ==================== QR SCANNER ====================
+  let qrScanner = null, scanTarget = null;
+
+  function openScanner(target) {
+    scanTarget = target;
+    document.getElementById('scanner-modal-title').textContent = target === 'driver-qr' ? 'Scanner QR Chauffeur' : 'Scanner QR Dock';
+    document.getElementById('manual-qr-input').value = '';
+    document.getElementById('scanner-modal').classList.add('open');
+    startCamera();
+  }
+
+  function startCamera() {
+    if (qrScanner) { try { qrScanner.stop(); } catch(e) {} qrScanner = null; }
+    const el = document.getElementById('qr-reader');
+    el.innerHTML = '';
+    try {
+      qrScanner = new Html5Qrcode('qr-reader');
+      qrScanner.start({ facingMode: 'environment' }, { fps: 10, qrbox: 200 }, onQRSuccess, () => {});
+    } catch(e) {
+      el.innerHTML = '<p style="color:var(--muted);font-size:0.78rem;padding:1rem;">Caméra non disponible — saisie manuelle.</p>';
+    }
+  }
+
+  async function onQRSuccess(decodedText) { stopCamera(); closeScanner(); await processQR(decodedText); }
+
+  async function submitManualQR() {
+    const val = document.getElementById('manual-qr-input').value.trim();
+    if (!val) { showToast('Entrez un code QR', true); return; }
+    await processQR(val);
+    closeScanner();
+  }
+
+  async function processQR(code) {
+    if (scanTarget === 'driver-qr') {
+      const { data: driver } = await supabase.from('drivers').select(`
+        *, profiles!drivers_user_id_fkey(name, email, phone)
+      `).eq('qr_code', code).single();
+      if (!driver) { showToast('QR chauffeur non reconnu', true); return; }
+      scannedDriverObj = driver;
+      showToast('Chauffeur identifié : ' + driver.profiles?.name);
+    } else {
+      const { data: dock } = await supabase.from('docks').select('*').eq('qr_code', code).single();
+      if (!dock) { showToast('QR dock non reconnu', true); return; }
+      scannedDockObj = dock;
+      showToast('Dock identifié : ' + dock.name);
+    }
+    updateScanSteps();
+  }
+
+  function stopCamera() { if (qrScanner) { try { qrScanner.stop(); } catch(e) {} qrScanner = null; } }
+  function closeScanner() { stopCamera(); document.getElementById('scanner-modal').classList.remove('open'); }
+
+  // ==================== ADMIN PAGES ====================
+  async function renderAdminDashboard() {
+    const { data: logs }    = await supabase.from('logs').select('status, duration');
+    const { data: drivers } = await supabase.from('drivers').select('id');
+    const { data: docks }   = await supabase.from('docks').select('id');
+    const active    = logs?.filter(l => l.status !== 'completed').length || 0;
+    const completed = logs?.filter(l => l.status === 'completed').length || 0;
+    const avgDur    = completed && logs ? Math.round(logs.filter(l => l.duration).reduce((s, l) => s + (l.duration || 0), 0) / completed) : 0;
+    document.getElementById('admin-stats-grid').innerHTML = `
+      <div class="stat-card"><div class="stat-val green">${active}</div><div class="stat-label">Camions actifs</div></div>
+      <div class="stat-card"><div class="stat-val blue">${completed}</div><div class="stat-label">Passages terminés</div></div>
+      <div class="stat-card"><div class="stat-val orange">${drivers?.length || 0}</div><div class="stat-label">Chauffeurs</div></div>
+      <div class="stat-card"><div class="stat-val">${docks?.length || 0}</div><div class="stat-label">Docks</div></div>
+      <div class="stat-card"><div class="stat-val">${fmtDur(avgDur)}</div><div class="stat-label">Durée moyenne</div></div>
+      <div class="stat-card"><div class="stat-val green">${logs?.length || 0}</div><div class="stat-label">Total passages</div></div>
+    `;
+    const { data: activeLogs } = await supabase.from('logs').select(`
+      *, drivers(vehicle, profiles!drivers_user_id_fkey(name)), docks(name)
+    `).neq('status', 'completed');
+    const tbody = document.getElementById('admin-active-tbody');
+    if (!activeLogs || !activeLogs.length) { tbody.innerHTML = '<tr><td colspan="6" class="no-data">Aucun camion actif</td></tr>'; return; }
+    tbody.innerHTML = activeLogs.map(l => {
+      const dur = l.entry_time ? Math.round((new Date() - new Date(l.entry_time)) / 60000) : null;
+      return `<tr><td>${l.drivers?.profiles?.name || '—'}</td><td>${l.drivers?.vehicle || '—'}</td><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtDur(dur)}</td><td>${badgeHtml(l.status)}</td></tr>`;
+    }).join('');
+  }
+
+  async function renderAdminLogs() {
+    const search = (document.getElementById('filter-search')?.value || '').toLowerCase();
+    const status = document.getElementById('filter-status')?.value || '';
+    const date   = document.getElementById('filter-date')?.value   || '';
+    const { data: logs } = await supabase.from('logs').select(`
+      *, drivers(vehicle, profiles!drivers_user_id_fkey(name)), docks(name)
+    `).order('entry_time', { ascending: false });
+    let filtered = logs || [];
+    if (status) filtered = filtered.filter(l => l.status === status);
+    if (date)   filtered = filtered.filter(l => l.entry_time.startsWith(date));
+    if (search) filtered = filtered.filter(l =>
+      (l.drivers?.profiles?.name || '').toLowerCase().includes(search) ||
+      (l.drivers?.vehicle        || '').toLowerCase().includes(search) ||
+      (l.docks?.name             || '').toLowerCase().includes(search)
+    );
+    const tbody = document.getElementById('admin-logs-tbody');
+    if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="7" class="no-data">Aucun résultat</td></tr>'; return; }
+    tbody.innerHTML = filtered.map(l =>
+      `<tr><td>${l.drivers?.profiles?.name || '—'}</td><td>${l.drivers?.vehicle || '—'}</td><td>${l.docks?.name || '—'}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.duration)}</td><td>${badgeHtml(l.status)}</td></tr>`
+    ).join('');
+  }
+
+  async function exportCSV() {
+    const { data: logs } = await supabase.from('logs').select(`
+      entry_time, exit_time, duration, status,
+      drivers(vehicle, profiles!drivers_user_id_fkey(name)), docks(name)
+    `);
+    const rows = [['Chauffeur', 'Véhicule', 'Dock', 'Entrée', 'Sortie', 'Durée (min)', 'Statut']];
+    logs?.forEach(l => rows.push([
+      l.drivers?.profiles?.name || '', l.drivers?.vehicle || '', l.docks?.name || '',
+      fmtTime(l.entry_time), fmtTime(l.exit_time), l.duration || '', l.status
+    ]));
+    const csv  = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'warehouse-logs.csv';
+    link.click();
+    showToast('Export CSV téléchargé');
+  }
+
+  async function renderAdminDrivers() {
+    const { data: drivers } = await supabase.from('drivers').select(`
+      *, profiles!drivers_user_id_fkey(name, email, phone)
+    `);
+    const tbody = document.getElementById('admin-drivers-tbody');
+    if (!drivers || !drivers.length) { tbody.innerHTML = '<tr><td colspan="6" class="no-data">Aucun chauffeur</td></tr>'; return; }
+    tbody.innerHTML = drivers.map(d =>
+      `<tr>
+        <td>${d.profiles?.name  || '—'}</td>
+        <td>${d.profiles?.email || '—'}</td>
+        <td>${d.profiles?.phone || '—'}</td>
+        <td>${d.vehicle}</td>
+        <td>${badgeHtml(d.status)}</td>
+        <td><button class="btn sm secondary" onclick="showQRView('${d.qr_code}','QR — ${d.profiles?.name || d.vehicle}')">Voir QR</button></td>
+      </tr>`
+    ).join('');
+  }
+
+  async function renderAdminDocks() {
+    const { data: docks } = await supabase.from('docks').select('*');
+    const grid = document.getElementById('docks-grid');
+    grid.innerHTML = '';
+    if (!docks) return;
+    for (const dk of docks) {
+      const wrap  = document.createElement('div'); wrap.className = 'card'; wrap.style.cssText = 'min-width:200px;max-width:240px;text-align:center;';
+      const dkContainerId = 'admin-dock-qr-' + dk.id;
+      const qrDiv = document.createElement('div');
+      qrDiv.id = dkContainerId;
+      qrDiv.style.cssText = 'width:150px;height:150px;margin:0 auto 0.5rem;border-radius:6px;overflow:hidden;';
+      const nm    = document.createElement('div'); nm.style.cssText = 'font-size:0.8rem;font-weight:500;margin-bottom:0.5rem;'; nm.textContent = dk.name;
+      const id    = document.createElement('div'); id.className = 'qr-id'; id.textContent = dk.qr_code;
+      const dlBtn = document.createElement('button'); dlBtn.className = 'btn sm'; dlBtn.textContent = 'Télécharger'; dlBtn.style.marginTop = '0.75rem';
+      dlBtn.onclick = () => {
+        const directUrl = qrUrl(dk.qr_code, 400);
+        const link = document.createElement('a');
+        link.href = directUrl; link.download = dk.name + '.png';
+        link.target = '_blank'; link.click();
+      };
+      wrap.appendChild(nm); wrap.appendChild(qrDiv); wrap.appendChild(id); wrap.appendChild(dlBtn);
+      grid.appendChild(wrap);
+      generateQRInto(dkContainerId, dk.qr_code, 150);
+    }
+  }
+
+  async function addDock() {
+    const name = document.getElementById('new-dock-name').value.trim();
+    if (!name) { showToast('Entrez un nom de dock', true); return; }
+    const qrCode = `DOCK:${Date.now()}:${name.replace(/\s+/g, '_')}`;
+    const { error } = await supabase.from('docks').insert([{ name, qr_code: qrCode }]);
+    if (error) { showToast(error.message, true); return; }
+    document.getElementById('new-dock-name').value = '';
+    showToast('Dock ajouté');
+    renderAdminDocks();
+  }
+
+  function showQRView(qrCode, title) {
+    document.getElementById('qr-view-title').textContent = title;
+    document.getElementById('qr-view-id').textContent    = qrCode;
+    document.getElementById('qr-view-modal').classList.add('open');
+    // ✅ Google Charts img dans le container
+    generateQRInto('qr-view-container', qrCode, 220);
   }
 
   function closeQRView() { document.getElementById('qr-view-modal').classList.remove('open'); }
