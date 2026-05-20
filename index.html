@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WareTrack — Suivi des camions</title>
+<title>WareTruck — Suivi des camions</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -136,7 +136,7 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 <!-- LOGIN -->
 <div id="login-screen" class="screen active">
   <div class="login-box">
-    <div class="login-logo">Ware<span>Track</span></div>
+    <div class="login-logo">Ware<span>Truck</span></div>
     <div class="login-sub">Système de suivi des camions — Entrepôt</div>
     <div class="tabs">
       <button class="tab-btn active" onclick="switchAuthTab('login')">Connexion</button>
@@ -165,8 +165,8 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
       <div id="reg-vehicle-field" class="field">
         <label>Type de véhicule</label>
         <select id="reg-vehicle">
-          <option value="CAM-SOLO">CAM-SOLO</option>
-          <option value="REMQ">REMQ</option>
+          <option value="CAM-SOLO">CAMION-SOLO</option>
+          <option value="REMQ">REMORQUE</option>
           <option value="CANTE">CANTE</option>
           <option value="DUCATO">DUCATO</option>
         </select>
@@ -208,7 +208,7 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
           <div class="qr-card-photo">
             <div class="qr-card-inner">
               <div class="qr-card-header">
-                <div class="qr-card-logo">Ware<span>Track</span></div>
+                <div class="qr-card-logo">Ware<span>Truck</span></div>
                 <div class="qr-card-badge">CHAUFFEUR</div>
               </div>
               <div class="qr-card-name" id="qr-card-name">—</div>
@@ -226,9 +226,9 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
         </div>
         <!-- Scanner dock → statut waiting uniquement -->
         <div class="card">
-          <div class="card-title">📷 Scanner un Dock</div>
+          <div class="card-title">📷 Scanner Quai</div>
           <div style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;line-height:1.7">
-            Scannez le QR code du dock pour signaler votre présence.<br>
+            Scannez le QR code du Quai pour signaler votre présence.<br>
             <strong style="color:var(--warn)">⚠️ L'entrée et la sortie seront enregistrées par l'opérateur.</strong>
           </div>
           <div id="driver-scan-result" style="display:none;margin-bottom:1rem">
