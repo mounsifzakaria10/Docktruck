@@ -77,7 +77,9 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--accent);color:#000;padding:.75rem 1.25rem;border-radius:var(--radius);font-size:.82rem;font-weight:500;z-index:9999;opacity:0;transform:translateY(12px);transition:all .3s;pointer-events:none;max-width:320px}
 .toast.show{opacity:1;transform:translateY(0)}.toast.err{background:var(--danger);color:#fff}.toast.info{background:var(--accent2);color:#fff}
 .hamburger{display:none}
+/* ===== NOTIFICATION BADGE ===== */
 .notif-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);margin-left:auto;flex-shrink:0}
+/* ===== PLANNING ===== */
 .planning-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;transition:border-color .2s}
 .planning-card:hover{border-color:var(--accent)}
 .planning-card.notif-new{border-color:var(--accent2);background:rgba(0,102,255,.07)}
@@ -90,6 +92,7 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 .planning-info .p-date{font-size:.72rem;color:var(--muted);margin-bottom:.25rem}
 .planning-info .p-route{font-size:.9rem;font-weight:600;color:var(--text)}
 .planning-info .p-driver{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+/* ===== QR CARD ===== */
 .qr-card-photo{display:flex;justify-content:center;margin:.5rem 0}
 .qr-card-inner{width:320px;background:linear-gradient(135deg,#0d1f14 0%,#0a1628 50%,#0d1f14 100%);border:1px solid var(--accent);border-radius:20px;padding:1.5rem;box-shadow:0 0 40px rgba(0,229,160,.15);position:relative;overflow:hidden}
 .qr-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
@@ -101,10 +104,12 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 .qr-card-code{text-align:center;font-size:.6rem;color:var(--muted);letter-spacing:.08em;margin-bottom:1rem;word-break:break-all}
 .qr-card-footer{text-align:center;font-size:.65rem;color:rgba(107,116,145,.7);border-top:1px solid rgba(42,48,69,.5);padding-top:.75rem}
 .qr-white-bg canvas,.qr-white-bg img{border-radius:8px!important;border:4px solid #fff!important;box-shadow:0 0 0 1px rgba(0,229,160,.4),0 4px 20px rgba(0,0,0,.4)!important;background:#fff!important;display:block!important}
+/* ===== SCAN STEP (opérateur) ===== */
 .scan-step-box{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
 .scan-step{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:center}
 .scan-step.done{border-color:var(--accent)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.8rem;margin:0 auto .75rem}
 .scan-step.done .step-num{background:var(--accent);color:#000}.step-label{font-size:.78rem;font-weight:500}.step-val{font-size:.7rem;color:var(--accent);margin-top:.25rem;word-break:break-all}
+/* STATUS BOX */
 .status-waiting-box{background:rgba(107,116,145,.1);border:1px solid var(--muted);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--muted);line-height:1.6}
 .status-active-box{background:rgba(0,102,255,.08);border:1px solid var(--accent2);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--accent2);line-height:1.6}
 @media(max-width:700px){
@@ -435,7 +440,7 @@ let currentUser = null, currentProfile = null, currentDriver = null;
 
 // ============ UTILS ============
 function showMsg(id,txt,type){const el=document.getElementById(id);if(el){el.textContent=txt;el.className='msg '+type;}}
-function showToast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast show'+(type==='err'?' err':type==='info'?' info':'');setTimeout(()=>{t.className='toast';},3500);}
+function showToast(msg,type='ok'){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.className='toast show'+(type==='err'?' err':type==='info'?' info':'');setTimeout(()=>{t.className='toast';},3500);}
 function fmtTime(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
 function fmtDur(min){if(min==null||min===undefined||isNaN(min))return'—';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m>0?' '+m+'min':''}`:`${m}min`;}
 function badgeHtml(s){const map={waiting:'En attente',arrived:'Au dock',loading:'Chargement',completed:'Terminé'};return`<span class="badge ${s}">${map[s]||s}</span>`;}
@@ -496,7 +501,7 @@ async function doLogin(){
   if(error){showMsg('login-msg',error.message,'error');return;}
   await loadUserData(data.user);
 }
-async function quickLogin(email,pwd){document.getElementById('login-email').value=email;document.getElementById('login-pass').value=pwd;await doLogin();}
+const quickLogin = async (email,pwd) => {document.getElementById('login-email').value=email;document.getElementById('login-pass').value=pwd;await doLogin();}
 
 async function doRegister(){
   const name=document.getElementById('reg-name').value.trim();
@@ -531,8 +536,8 @@ async function loadUserData(user){
     const{data:drv}=await supabase.from('drivers').select('*').eq('user_id',user.id).single();
     currentDriver=drv;
   }
-  document.getElementById('login-screen').classList.remove('active');
-  document.getElementById('app-screen').classList.add('active');
+  const loginS = document.getElementById('login-screen'); if(loginS) loginS.classList.remove('active');
+  const appS = document.getElementById('app-screen'); if(appS) appS.classList.add('active');
   setupNav();
 }
 
@@ -600,14 +605,15 @@ function goTo(pageId){
   if(pageId==='admin-docks')renderAdminDocks();
   if(pageId==='admin-planning')renderAdminPlanning();
 }
-function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('nav-backdrop').classList.toggle('open');}
-function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('nav-backdrop').classList.remove('open');}
+function toggleSidebar(){const s=document.getElementById('sidebar'); if(s) s.classList.toggle('open');const b=document.getElementById('nav-backdrop'); if(b) b.classList.toggle('open');}
+function closeSidebar(){const s=document.getElementById('sidebar'); if(s) s.classList.remove('open');const b=document.getElementById('nav-backdrop'); if(b) b.classList.remove('open');}
 
 // ============ DRIVER PROFILE ============
 async function renderDriverProfile(){
   if(!currentDriver){document.getElementById('driver-profile-header').innerHTML='<p style="color:var(--muted)">Profil chauffeur non trouvé.</p>';return;}
   const u=currentProfile,d=currentDriver;
-  const ini=u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const names = u.name.split(' ');
+  const ini= names.map(w=>w[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('driver-profile-header').innerHTML=`<div class="avatar">${ini}</div><div class="profile-info"><h2>${u.name}</h2><p>${u.email} · ${u.phone||'—'}</p></div>`;
   document.getElementById('driver-info-grid').innerHTML=`
     <div class="info-item"><label>Type véhicule</label><span>${d.vehicle}</span></div>
@@ -701,9 +707,9 @@ async function driverProcessDockQR(code){
 function driverResetScan(){
   driverScannedDock=null;
   if(driverQrScanner){try{driverQrScanner.stop();}catch(e){}driverQrScanner=null;}
-  document.getElementById('driver-scan-result').style.display='none';
-  document.getElementById('driver-qr-reader').style.display='none';
-  document.getElementById('driver-scan-manual').style.display='none';
+  const res = document.getElementById('driver-scan-result'); if(res) res.style.display='none';
+  const reader = document.getElementById('driver-qr-reader'); if(reader) reader.style.display='none';
+  const manual = document.getElementById('driver-scan-manual'); if(manual) manual.style.display='none';
   const m=document.getElementById('driver-manual-qr');if(m)m.value='';
 }
 
@@ -714,7 +720,6 @@ async function renderDriverLogs(){
   const tb=document.getElementById('driver-logs-tbody');
   if(!logs||!logs.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun passage</td></tr>';return;}
   tb.innerHTML=logs.map(l=>{
-    const wt=l.waiting_time&&l.entry_time?Math.round((new Date(l.entry_time)-new Date(l.waiting_time))/60000):null;
     return`<tr><td>${l.docks?.name||'—'}</td><td>${fmtTime(l.waiting_time)}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.loading_duration)}</td><td>${badgeHtml(l.status)}</td></tr>`;
   }).join('');
 }
@@ -852,8 +857,7 @@ async function renderOperatorActive(){
     <td>${l.docks?.name||'—'}</td>
     <td>${fmtTime(l.waiting_time)}</td>
     <td>${fmtTime(l.entry_time)}</td>
-    <td>${badgeHtml(l.status)}</td>
-  </tr>`).join('');
+    <td>${badgeHtml(l.status)}</td></tr>`).join('');
 }
 
 async function renderDockQRs(){
@@ -951,8 +955,7 @@ async function renderAdminLogs(){
     <td>${fmtTime(l.exit_time)}</td>
     <td>${fmtDur(l.wait_duration)}</td>
     <td>${fmtDur(l.loading_duration)}</td>
-    <td>${badgeHtml(l.status)}</td>
-  </tr>`).join('');
+    <td>${badgeHtml(l.status)}</td></tr>`).join('');
 }
 
 async function exportCSV(){
@@ -965,18 +968,16 @@ async function exportCSV(){
   showToast('Export CSV téléchargé');
 }
 
-// ============ ADMIN DRIVERS ============
+// ============ ADMIN CHAUFFEURS ============
 async function renderAdminDrivers(){
   const{data:drivers}=await supabase.from('drivers').select('*,profiles!drivers_user_id_fkey(name,email,phone)');
   const tb=document.getElementById('admin-drivers-tbody');
   if(!drivers||!drivers.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun chauffeur</td></tr>';return;}
-  // Correction de la ligne mal formée
   tb.innerHTML=drivers.map(d=>`<tr>
     <td>${d.profiles?.name||'—'}</td><td>${d.profiles?.email||'—'}</td>
     <td>${d.profiles?.phone||'—'}</td><td>${d.vehicle}</td>
     <td>${badgeHtml(d.status)}</td>
-    <td><button class="btn sm secondary" onclick="showQRView('${d.qr_code}','QR — ${(d.profiles?.name||d.vehicle).replace(/'/g,'')}')">Voir QR</button></td>
-  </tr>`).join('');
+    <td><button class="btn sm secondary" onclick="showQRView('${d.qr_code}','QR — ${(d.profiles?.name||d.vehicle).replace(/'/g,'')}')">Voir QR</button></td></tr>`).join('');
 }
 
 // ============ ADMIN DOCKS ============
@@ -1026,6 +1027,7 @@ async function renderAdminPlanning(){
   let f=plans||[];
   if(search)f=f.filter(p=>(p.drivers?.profiles?.name||'').toLowerCase().includes(search)||(p.to_depot||'').toLowerCase().includes(search));
   const el=document.getElementById('admin-planning-list');
+  if(!el) return;
   if(!f.length){el.innerHTML='<div class="card"><p style="color:var(--muted);font-size:.82rem">Aucune mission trouvée.</p></div>';return;}
   el.innerHTML=f.map(p=>{
     const fromBadge=p.from_depot==='USINE'?'usine':'dzl';
@@ -1078,14 +1080,15 @@ function showQRView(qrCode,title){
   document.getElementById('qr-view-modal').classList.add('open');
   generateQRInto('qr-view-container',qrCode,220);
 }
-function closeQRView(){document.getElementById('qr-view-modal').classList.remove('open');}
+function closeQRView(){const m=document.getElementById('qr-view-modal'); if(m) m.classList.remove('open');}
 
 // ============ EVENTS ============
-document.getElementById('scanner-modal').addEventListener('click',function(e){if(e.target===this)closeScanner();});
-document.getElementById('qr-view-modal').addEventListener('click',function(e){if(e.target===this)closeQRView();});
-document.getElementById('manual-op-modal').addEventListener('click',function(e){if(e.target===this)closeManualOpModal();});
-document.getElementById('reg-role').addEventListener('change',function(){document.getElementById('reg-vehicle-field').style.display=this.value==='driver'?'block':'none';});
-document.getElementById('reg-role').dispatchEvent(new Event('change'));
+const sModal = document.getElementById('scanner-modal'); if(sModal) sModal.addEventListener('click',function(e){if(e.target===this)closeScanner();});
+const qvModal = document.getElementById('qr-view-modal'); if(qvModal) qvModal.addEventListener('click',function(e){if(e.target===this)closeQRView();});
+const mModal = document.getElementById('manual-op-modal'); if(mModal) mModal.addEventListener('click',function(e){if(e.target===this)closeManualOpModal();});
+const rRole = document.getElementById('reg-role'); 
+if(rRole) rRole.addEventListener('change',function(){document.getElementById('reg-vehicle-field').style.display=this.value==='driver'?'block':'none';});
+if(rRole) rRole.dispatchEvent(new Event('change'));
 
 // ============ EXPOSE ============
 window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;window.quickLogin=quickLogin;
