@@ -77,9 +77,7 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--accent);color:#000;padding:.75rem 1.25rem;border-radius:var(--radius);font-size:.82rem;font-weight:500;z-index:9999;opacity:0;transform:translateY(12px);transition:all .3s;pointer-events:none;max-width:320px}
 .toast.show{opacity:1;transform:translateY(0)}.toast.err{background:var(--danger);color:#fff}.toast.info{background:var(--accent2);color:#fff}
 .hamburger{display:none}
-/* ===== NOTIFICATION BADGE ===== */
 .notif-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);margin-left:auto;flex-shrink:0}
-/* ===== PLANNING ===== */
 .planning-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;transition:border-color .2s}
 .planning-card:hover{border-color:var(--accent)}
 .planning-card.notif-new{border-color:var(--accent2);background:rgba(0,102,255,.07)}
@@ -92,7 +90,6 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 .planning-info .p-date{font-size:.72rem;color:var(--muted);margin-bottom:.25rem}
 .planning-info .p-route{font-size:.9rem;font-weight:600;color:var(--text)}
 .planning-info .p-driver{font-size:.72rem;color:var(--muted);margin-top:.2rem}
-/* ===== QR CARD ===== */
 .qr-card-photo{display:flex;justify-content:center;margin:.5rem 0}
 .qr-card-inner{width:320px;background:linear-gradient(135deg,#0d1f14 0%,#0a1628 50%,#0d1f14 100%);border:1px solid var(--accent);border-radius:20px;padding:1.5rem;box-shadow:0 0 40px rgba(0,229,160,.15);position:relative;overflow:hidden}
 .qr-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
@@ -104,12 +101,10 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 .qr-card-code{text-align:center;font-size:.6rem;color:var(--muted);letter-spacing:.08em;margin-bottom:1rem;word-break:break-all}
 .qr-card-footer{text-align:center;font-size:.65rem;color:rgba(107,116,145,.7);border-top:1px solid rgba(42,48,69,.5);padding-top:.75rem}
 .qr-white-bg canvas,.qr-white-bg img{border-radius:8px!important;border:4px solid #fff!important;box-shadow:0 0 0 1px rgba(0,229,160,.4),0 4px 20px rgba(0,0,0,.4)!important;background:#fff!important;display:block!important}
-/* ===== SCAN STEP (opérateur) ===== */
 .scan-step-box{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
 .scan-step{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:center}
 .scan-step.done{border-color:var(--accent)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.8rem;margin:0 auto .75rem}
 .scan-step.done .step-num{background:var(--accent);color:#000}.step-label{font-size:.78rem;font-weight:500}.step-val{font-size:.7rem;color:var(--accent);margin-top:.25rem;word-break:break-all}
-/* STATUS BOX */
 .status-waiting-box{background:rgba(107,116,145,.1);border:1px solid var(--muted);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--muted);line-height:1.6}
 .status-active-box{background:rgba(0,102,255,.08);border:1px solid var(--accent2);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--accent2);line-height:1.6}
 @media(max-width:700px){
@@ -857,7 +852,8 @@ async function renderOperatorActive(){
     <td>${l.docks?.name||'—'}</td>
     <td>${fmtTime(l.waiting_time)}</td>
     <td>${fmtTime(l.entry_time)}</td>
-    <td>${badgeHtml(l.status)}</td></tr>`).join('');
+    <td>${badgeHtml(l.status)}</td>
+  </tr>`).join('');
 }
 
 async function renderDockQRs(){
@@ -955,7 +951,8 @@ async function renderAdminLogs(){
     <td>${fmtTime(l.exit_time)}</td>
     <td>${fmtDur(l.wait_duration)}</td>
     <td>${fmtDur(l.loading_duration)}</td>
-    <td>${badgeHtml(l.status)}</td></tr>`).join('');
+    <td>${badgeHtml(l.status)}</td>
+  </tr>`).join('');
 }
 
 async function exportCSV(){
@@ -973,12 +970,13 @@ async function renderAdminDrivers(){
   const{data:drivers}=await supabase.from('drivers').select('*,profiles!drivers_user_id_fkey(name,email,phone)');
   const tb=document.getElementById('admin-drivers-tbody');
   if(!drivers||!drivers.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun chauffeur</td></tr>';return;}
+  // Correction de la ligne mal formée
   tb.innerHTML=drivers.map(d=>`<tr>
     <td>${d.profiles?.name||'—'}</td><td>${d.profiles?.email||'—'}</td>
-    <td>${d.profiles
     <td>${d.profiles?.phone||'—'}</td><td>${d.vehicle}</td>
     <td>${badgeHtml(d.status)}</td>
-    <td><button class="btn sm secondary" onclick="showQRView('${d.qr_code}','QR — ${(d.profiles?.name||d.vehicle).replace(/'/g,'')}')">Voir QR</button></td></tr>`).join('');
+    <td><button class="btn sm secondary" onclick="showQRView('${d.qr_code}','QR — ${(d.profiles?.name||d.vehicle).replace(/'/g,'')}')">Voir QR</button></td>
+  </tr>`).join('');
 }
 
 // ============ ADMIN DOCKS ============
@@ -1039,10 +1037,10 @@ async function renderAdminPlanning(){
       </div>
       <div class="planning-info">
         <div class="p-date">${p.date}</div>
-        <div class="p-route">${p.from_depot} <span style="color:var(--muted)">\u2192</span> ${p.to_depot}${drzl}</div>
-        <div class="p-driver">\u{1F69B} ${p.drivers?.profiles?.name||'\u2014'} \u00B7 ${p.drivers?.vehicle||p.vehicle||'\u2014'}${p.note?'  \u00B7  '+p.note:''}</div>
+        <div class="p-route">${p.from_depot} <span style="color:var(--muted)">→</span> ${p.to_depot}${drzl}</div>
+        <div class="p-driver">🚛 ${p.drivers?.profiles?.name||'—'} · ${p.drivers?.vehicle||p.vehicle||'—'}${p.note?'  ·  '+p.note:''}</div>
       </div>
-      <button class="btn sm danger" onclick="deletePlanning('${p.id}')">\u00D7</button>
+      <button class="btn sm danger" onclick="deletePlanning('${p.id}')">×</button>
     </div>`;
   }).join('');
 }
