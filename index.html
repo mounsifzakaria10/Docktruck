@@ -112,6 +112,14 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 /* STATUS BOX */
 .status-waiting-box{background:rgba(107,116,145,.1);border:1px solid var(--muted);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--muted);line-height:1.6}
 .status-active-box{background:rgba(0,102,255,.08);border:1px solid var(--accent2);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--accent2);line-height:1.6}
+  .badge.shift1, .badge.shift2, .badge.dzl {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
 @media(max-width:700px){
 .sidebar{transform:translateX(-100%);transition:transform .25s}.sidebar.open{transform:translateX(0)}
 .main-content{margin-left:0;padding:1rem}
@@ -725,34 +733,69 @@ async function renderDriverLogs(){
 }
 
 // ============ DRIVER : PLANNING ============
-async function renderDriverPlanning(){
-  if(!currentDriver)return;
-  const{data:plans}=await supabase.from('planning').select('*').eq('driver_id',currentDriver.id).order('date',{ascending:false});
-  const el=document.getElementById('driver-planning-list');
-  if(!plans||!plans.length){el.innerHTML='<div class="card"><p style="color:var(--muted);font-size:.82rem">Aucune mission assignée.</p></div>';return;}
-  // Marquer comme lu
-  const unread=plans.filter(p=>!p.read_by_driver);
-  if(unread.length){
-    await supabase.from('planning').update({read_by_driver:true}).in('id',unread.map(p=>p.id));
-    const dot=document.getElementById('notif-dot-driver-planning');
-    if(dot)dot.style.display='none';
+async function renderDriverPlanning() {
+  if (!currentDriver) return;
+  const { data: plans } = await supabase
+    .from('planning')
+    .select('*')
+    .eq('driver_id', currentDriver.id)
+    .order('date', { ascending: false });
+
+  const container = document.getElementById('driver-planning-list');
+  if (!plans || !plans.length) {
+    container.innerHTML = '<div class="card"><p class="no-data">Aucune mission assignée.</p></div>';
+    return;
   }
-  el.innerHTML=plans.map(p=>{
-    const fromBadge=p.from_depot==='USINE'?'usine':'dzl';
-    const today=new Date().toISOString().slice(0,10);
-    const isToday=p.date===today;
-    return`<div class="planning-card${isToday?' notif-new':''}">
-      <div>
-        <span class="planning-badge ${p.shift==='Shift 1'?'shift1':'shift2'}">${p.shift}</span>
-        <span class="planning-badge ${fromBadge}" style="margin-left:.4rem">${p.from_depot}</span>
-      </div>
-      <div class="planning-info">
-        <div class="p-date">${p.date}${isToday?' <strong style="color:var(--accent)">— AUJOURD\'HUI</strong>':''}</div>
-        <div class="p-route">${p.from_depot} → ${p.to_depot}</div>
-        <div class="p-driver">${currentDriver.vehicle}${p.note?'  ·  Note : '+p.note:''}</div>
-      </div>
-    </div>`;
-  }).join('');
+
+  // Marquer comme lu
+  const unread = plans.filter(p => !p.read_by_driver);
+  if (unread.length) {
+    await supabase.from('planning').update({ read_by_driver: true }).in('id', unread.map(p => p.id));
+    const dot = document.getElementById('notif-dot-driver-planning');
+    if (dot) dot.style.display = 'none';
+  }
+
+  // Construction du tableau pour le chauffeur
+  let html = `
+    <div class="card" style="overflow-x: auto;">
+      <table style="min-width: 500px; width: 100%;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Shift</th>
+            <th>Départ</th>
+            <th>Destination</th>
+            <th>Véhicule</th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  const today = new Date().toISOString().slice(0, 10);
+  for (const p of plans) {
+    const isToday = p.date === today;
+    const fromDepot = p.from_depot === 'USINE' ? 'USI' : p.from_depot;
+    const toDepot = p.to_depot || '—';
+    html += `
+      <tr style="${isToday ? 'background: rgba(0,102,255,.1);' : ''}">
+        <td>${p.date}${isToday ? ' <strong style="color:var(--accent)">(auj.)</strong>' : ''}</td>
+        <td><span class="badge ${p.shift === 'Shift 1' ? 'shift1' : 'shift2'}" style="background:${p.shift === 'Shift 1' ? 'rgba(0,229,160,.15)' : 'rgba(255,170,0,.15)'}; color:${p.shift === 'Shift 1' ? 'var(--accent)' : 'var(--warn)'};">${p.shift === 'Shift 1' ? 'SHIFT01' : 'SHIFT02'}</span></td>
+        <td>${fromDepot}</td>
+        <td>${toDepot}${isDZL(p.to_depot) ? ' <span class="badge dzl" style="background:rgba(255,68,85,.15); color:var(--danger);">DZL</span>' : ''}</td>
+        <td>${currentDriver.vehicle}</td>
+        <td>${p.note || '—'}</td>
+      </tr>
+    `;
+  }
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
 }
 
 async function checkDriverNotifs(){
@@ -1007,44 +1050,92 @@ async function addDock(){
 }
 
 // ============ ADMIN PLANNING ============
-async function renderAdminPlanning(){
-  const{data:drivers}=await supabase.from('drivers').select('id,vehicle,profiles!drivers_user_id_fkey(name)');
-  const sel=document.getElementById('plan-driver');
-  if(sel&&sel.options.length<=1){
-    drivers?.forEach(d=>{const o=document.createElement('option');o.value=d.id;o.textContent=(d.profiles?.name||'?')+' — '+d.vehicle;o.dataset.vehicle=d.vehicle;sel.appendChild(o);});
-    sel.addEventListener('change',()=>{
-      const opt=sel.options[sel.selectedIndex];
-      document.getElementById('plan-vehicle').value=opt.dataset.vehicle||'';
+async function renderAdminPlanning() {
+  // Récupération des chauffeurs pour le formulaire (inchangé)
+  const { data: drivers } = await supabase.from('drivers').select('id,vehicle,profiles!drivers_user_id_fkey(name)');
+  const sel = document.getElementById('plan-driver');
+  if (sel && sel.options.length <= 1) {
+    drivers?.forEach(d => {
+      const o = document.createElement('option');
+      o.value = d.id;
+      o.textContent = (d.profiles?.name || '?') + ' — ' + d.vehicle;
+      o.dataset.vehicle = d.vehicle;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', () => {
+      const opt = sel.options[sel.selectedIndex];
+      document.getElementById('plan-vehicle').value = opt.dataset.vehicle || '';
     });
   }
-  const dateF=document.getElementById('plan-filter-date')?.value||'';
-  const shiftF=document.getElementById('plan-filter-shift')?.value||'';
-  const search=(document.getElementById('plan-filter-search')?.value||'').toLowerCase();
-  let q=supabase.from('planning').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name))').order('date',{ascending:false});
-  if(dateF)q=q.eq('date',dateF);
-  if(shiftF)q=q.eq('shift',shiftF);
-  const{data:plans}=await q;
-  let f=plans||[];
-  if(search)f=f.filter(p=>(p.drivers?.profiles?.name||'').toLowerCase().includes(search)||(p.to_depot||'').toLowerCase().includes(search));
-  const el=document.getElementById('admin-planning-list');
-  if(!el) return;
-  if(!f.length){el.innerHTML='<div class="card"><p style="color:var(--muted);font-size:.82rem">Aucune mission trouvée.</p></div>';return;}
-  el.innerHTML=f.map(p=>{
-    const fromBadge=p.from_depot==='USINE'?'usine':'dzl';
-    const drzl=isDZL(p.to_depot)?'<span class="planning-badge dzl" style="margin-left:.4rem">DZL</span>':'';
-    return`<div class="planning-card">
-      <div style="display:flex;flex-direction:column;gap:.35rem;min-width:70px">
-        <span class="planning-badge ${p.shift==='Shift 1'?'shift1':'shift2'}">${p.shift}</span>
-        <span class="planning-badge ${fromBadge}">${p.from_depot}</span>
-      </div>
-      <div class="planning-info">
-        <div class="p-date">${p.date}</div>
-        <div class="p-route">${p.from_depot} <span style="color:var(--muted)">→</span> ${p.to_depot}${drzl}</div>
-        <div class="p-driver">🚛 ${p.drivers?.profiles?.name||'—'} · ${p.drivers?.vehicle||p.vehicle||'—'}${p.note?'  ·  '+p.note:''}</div>
-      </div>
-      <button class="btn sm danger" onclick="deletePlanning('${p.id}')">×</button>
-    </div>`;
-  }).join('');
+
+  // Filtres
+  const dateF = document.getElementById('plan-filter-date')?.value || '';
+  const shiftF = document.getElementById('plan-filter-shift')?.value || '';
+  const search = (document.getElementById('plan-filter-search')?.value || '').toLowerCase();
+
+  let q = supabase.from('planning').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name))').order('date', { ascending: false });
+  if (dateF) q = q.eq('date', dateF);
+  if (shiftF) q = q.eq('shift', shiftF);
+  const { data: plans } = await q;
+
+  let f = plans || [];
+  if (search) {
+    f = f.filter(p =>
+      (p.drivers?.profiles?.name || '').toLowerCase().includes(search) ||
+      (p.to_depot || '').toLowerCase().includes(search)
+    );
+  }
+
+  const container = document.getElementById('admin-planning-list');
+  if (!f.length) {
+    container.innerHTML = '<div class="card"><p class="no-data">Aucune mission trouvée.</p></div>';
+    return;
+  }
+
+  // Construction du tableau
+  let html = `
+    <div class="card" style="overflow-x: auto;">
+      <table style="min-width: 600px; width: 100%;">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Shift</th>
+            <th>Du dépôt</th>
+            <th>Au dépôt</th>
+            <th>Véhicule</th>
+            <th>Chauffeur</th>
+            <th style="width: 60px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
+  for (const p of f) {
+    const driverName = p.drivers?.profiles?.name || '—';
+    const vehicle = p.drivers?.vehicle || p.vehicle || '—';
+    const fromDepot = p.from_depot === 'USINE' ? 'USI' : p.from_depot; // Abréviation optionnelle
+    const toDepot = p.to_depot || '—';
+
+    html += `
+      <tr>
+        <td>${p.date}</td>
+        <td><span class="badge ${p.shift === 'Shift 1' ? 'shift1' : 'shift2'}" style="background:${p.shift === 'Shift 1' ? 'rgba(0,229,160,.15)' : 'rgba(255,170,0,.15)'}; color:${p.shift === 'Shift 1' ? 'var(--accent)' : 'var(--warn)'};">${p.shift === 'Shift 1' ? 'SHIFT01' : 'SHIFT02'}</span></td>
+        <td>${fromDepot}</td>
+        <td>${toDepot}${isDZL(p.to_depot) ? ' <span class="badge dzl" style="background:rgba(255,68,85,.15); color:var(--danger);">DZL</span>' : ''}</td>
+        <td>${vehicle}</td>
+        <td>${driverName}</td>
+        <td><button class="btn sm danger" onclick="deletePlanning('${p.id}')" style="padding: 0.2rem 0.5rem;">✕</button></td>
+      </tr>
+    `;
+  }
+
+  html += `
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = html;
 }
 
 async function createPlanning(){
