@@ -120,6 +120,80 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
   font-weight: 500;
   text-transform: uppercase;
 }
+  /* === ADMIN PLANNING ATTRACTIF === */
+.planning-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.stat-pill {
+  background: var(--surface2);
+  border-radius: 40px;
+  padding: 0.4rem 1rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+}
+.stat-pill strong {
+  font-weight: 700;
+  color: var(--accent);
+  margin-right: 0.4rem;
+}
+.admin-planning-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8rem;
+}
+.admin-planning-table th {
+  background: var(--surface2);
+  padding: 0.9rem 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+.admin-planning-table td {
+  padding: 0.9rem 0.8rem;
+  border-bottom: 1px solid rgba(42,48,69,0.3);
+  vertical-align: middle;
+}
+.admin-planning-table tr {
+  transition: all 0.2s;
+}
+.admin-planning-table tr:hover {
+  background: rgba(0,229,160,0.05);
+  transform: scale(1.01);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.badge-status {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+.status-done { background: rgba(0,229,160,0.2); color: var(--accent); }
+.status-progress { background: rgba(0,102,255,0.2); color: var(--accent2); }
+.status-planned { background: rgba(107,116,145,0.2); color: var(--muted); }
+.time-value {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text);
+}
+.filter-bar-modern {
+  background: var(--surface);
+  padding: 1rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  border: 1px solid var(--border);
+}
 @media(max-width:700px){
 .sidebar{transform:translateX(-100%);transition:transform .25s}.sidebar.open{transform:translateX(0)}
 .main-content{margin-left:0;padding:1rem}
@@ -382,15 +456,25 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
           <div class="field"><label>Note / Instructions</label><textarea id="plan-note" placeholder="Instructions particulières..."></textarea></div>
           <button class="btn sm" onclick="createPlanning()" style="margin-top:.5rem">➕ Créer la mission</button>
         </div>
-        <div class="filter-bar">
-          <input type="date" id="plan-filter-date" oninput="renderAdminPlanning()">
-          <select id="plan-filter-shift" onchange="renderAdminPlanning()">
-            <option value="">Tous les shifts</option>
-            <option value="Shift 1">Shift 1</option>
-            <option value="Shift 2">Shift 2</option>
-          </select>
-          <input type="text" id="plan-filter-search" placeholder="Chauffeur, destination..." oninput="renderAdminPlanning()">
-        </div>
+     <div class="filter-bar-modern">
+  <div class="field" style="margin:0; flex:1">
+    <label>📅 Date</label>
+    <input type="date" id="plan-filter-date" oninput="renderAdminPlanning()" style="width:100%">
+  </div>
+  <div class="field" style="margin:0">
+    <label>🕒 Shift</label>
+    <select id="plan-filter-shift" onchange="renderAdminPlanning()">
+      <option value="">Tous</option>
+      <option value="Shift 1">Shift 1</option>
+      <option value="Shift 2">Shift 2</option>
+    </select>
+  </div>
+  <div class="field" style="margin:0; flex:2">
+    <label>🔍 Recherche (chauffeur / destination)</label>
+    <input type="text" id="plan-filter-search" placeholder="Nom ou destination..." oninput="renderAdminPlanning()" style="width:100%">
+  </div>
+  <button class="btn sm secondary" onclick="document.getElementById('plan-filter-date').value='';document.getElementById('plan-filter-shift').value='';document.getElementById('plan-filter-search').value='';renderAdminPlanning();">Réinitialiser</button>
+</div>
         <div id="admin-planning-list"></div>
       </div>
 
@@ -1051,7 +1135,7 @@ async function addDock(){
 
 // ============ ADMIN PLANNING ============
 async function renderAdminPlanning() {
-  // Récupération des chauffeurs pour le formulaire (inchangé)
+  // 1) Remplir la liste des chauffeurs dans le formulaire (si vide)
   const { data: drivers } = await supabase.from('drivers').select('id,vehicle,profiles!drivers_user_id_fkey(name)');
   const sel = document.getElementById('plan-driver');
   if (sel && sel.options.length <= 1) {
@@ -1068,7 +1152,7 @@ async function renderAdminPlanning() {
     });
   }
 
-  // Filtres
+  // 2) Récupérer les filtres
   const dateF = document.getElementById('plan-filter-date')?.value || '';
   const shiftF = document.getElementById('plan-filter-shift')?.value || '';
   const search = (document.getElementById('plan-filter-search')?.value || '').toLowerCase();
@@ -1078,43 +1162,110 @@ async function renderAdminPlanning() {
   if (shiftF) q = q.eq('shift', shiftF);
   const { data: plans } = await q;
 
-  let f = plans || [];
+  // Filtre recherche textuelle
+  let filtered = plans || [];
   if (search) {
-    f = f.filter(p =>
+    filtered = filtered.filter(p =>
       (p.drivers?.profiles?.name || '').toLowerCase().includes(search) ||
       (p.to_depot || '').toLowerCase().includes(search)
     );
   }
 
+  // 3) Récupérer tous les logs pour les dates concernées (pour joindre les temps)
+  let logsMap = new Map(); // key = "driverId_date"
+  if (filtered.length) {
+    const uniqueDates = [...new Set(filtered.map(p => p.date))];
+    const { data: logs } = await supabase
+      .from('logs')
+      .select('*, drivers(id)')
+      .in('waiting_time', uniqueDates.map(d => d + 'T%')); // approche simple
+    if (logs) {
+      logs.forEach(log => {
+        const driverId = log.drivers?.id;
+        if (!driverId) return;
+        const logDate = log.waiting_time?.slice(0,10);
+        if (logDate) {
+          const key = `${driverId}_${logDate}`;
+          logsMap.set(key, log);
+        }
+      });
+    }
+  }
+
+  // 4) Construire le tableau enrichi
   const container = document.getElementById('admin-planning-list');
-  if (!f.length) {
+  if (!filtered.length) {
     container.innerHTML = '<div class="card"><p class="no-data">Aucune mission trouvée.</p></div>';
     return;
   }
 
-  // Construction du tableau
+  // Statistiques rapides
+  const totalMissions = filtered.length;
+  const missionsWithLog = filtered.filter(p => {
+    const key = `${p.driver_id}_${p.date}`;
+    return logsMap.has(key);
+  }).length;
+
   let html = `
-    <div class="card" style="overflow-x: auto;">
-      <table style="min-width: 600px; width: 100%;">
+    <div class="planning-stats">
+      <div class="stat-pill"><strong>📋 Total missions</strong> ${totalMissions}</div>
+      <div class="stat-pill"><strong>✅ Réalisées</strong> ${missionsWithLog}</div>
+      <div class="stat-pill"><strong>📅 Filtre</strong> ${dateF || 'Toutes dates'}</div>
+    </div>
+    <div class="card" style="overflow-x: auto; padding: 0;">
+      <table class="admin-planning-table">
         <thead>
           <tr>
             <th>Date</th>
             <th>Shift</th>
-            <th>Du dépôt</th>
-            <th>Au dépôt</th>
+            <th>Du déplo</th>
+            <th>Au déplo</th>
             <th>Véhicule</th>
             <th>Chauffeur</th>
-            <th style="width: 60px;">Action</th>
+            <th>Note</th>
+            <th>Hr arrivée dock</th>
+            <th>Hr début charg.</th>
+            <th>Hr fin charg.</th>
+            <th>Temps attente</th>
+            <th>Temps chargement</th>
+            <th>Statut</th>
+            <th style="width:50px"></th>
           </tr>
         </thead>
         <tbody>
   `;
 
-  for (const p of f) {
+  for (const p of filtered) {
     const driverName = p.drivers?.profiles?.name || '—';
     const vehicle = p.drivers?.vehicle || p.vehicle || '—';
-    const fromDepot = p.from_depot === 'USINE' ? 'USI' : p.from_depot; // Abréviation optionnelle
+    const fromDepot = p.from_depot === 'USINE' ? 'USI' : p.from_depot;
     const toDepot = p.to_depot || '—';
+    const note = p.note || '—';
+
+    // Récupérer le log associé
+    const key = `${p.driver_id}_${p.date}`;
+    const log = logsMap.get(key);
+    let arrival = '—', deb = '—', fin = '—', waitDur = '—', loadDur = '—', status = 'planifiée';
+    let statusClass = 'status-planned';
+    if (log) {
+      arrival = log.waiting_time ? fmtTime(log.waiting_time) : '—';
+      deb = log.entry_time ? fmtTime(log.entry_time) : '—';
+      fin = log.exit_time ? fmtTime(log.exit_time) : '—';
+      waitDur = fmtDur(log.wait_duration);
+      loadDur = fmtDur(log.loading_duration);
+      if (log.status === 'completed') {
+        status = 'terminée';
+        statusClass = 'status-done';
+      } else if (log.status === 'arrived') {
+        status = 'en cours';
+        statusClass = 'status-progress';
+      } else if (log.status === 'waiting') {
+        status = 'en attente';
+        statusClass = 'status-progress';
+      } else {
+        status = log.status;
+      }
+    }
 
     html += `
       <tr>
@@ -1124,17 +1275,19 @@ async function renderAdminPlanning() {
         <td>${toDepot}${isDZL(p.to_depot) ? ' <span class="badge dzl" style="background:rgba(255,68,85,.15); color:var(--danger);">DZL</span>' : ''}</td>
         <td>${vehicle}</td>
         <td>${driverName}</td>
-        <td><button class="btn sm danger" onclick="deletePlanning('${p.id}')" style="padding: 0.2rem 0.5rem;">✕</button></td>
+        <td><span title="${note.replace(/"/g, '&quot;')}">${note.length > 20 ? note.slice(0,20)+'…' : note}</span></td>
+        <td><span class="time-value">${arrival}</span></td>
+        <td><span class="time-value">${deb}</span></td>
+        <td><span class="time-value">${fin}</span></td>
+        <td>${waitDur}</td>
+        <td>${loadDur}</td>
+        <td><span class="badge-status ${statusClass}">${status}</span></td>
+        <td><button class="btn sm danger" onclick="deletePlanning('${p.id}')" style="padding:0.2rem 0.5rem;">✕</button></td>
       </tr>
     `;
   }
 
-  html += `
-        </tbody>
-      </table>
-    </div>
-  `;
-
+  html += `</tbody></table></div>`;
   container.innerHTML = html;
 }
 
