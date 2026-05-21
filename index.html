@@ -9,85 +9,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg-cream: #FFF9EF;
-  --bg-surface: #FFFFFF;
-  --bg-soft: #FEF5E8;
-  --card-bg: #FFFFFF;
-  --border-light: #FFE3C9;
-  --border-soft: #FFD8B5;
-  --tomato: #E64B2E;
-  --gold: #F5B042;
-  --sage: #8FC93A;
-  --terracotta: #D36B46;
-  --text-dark: #2A241F;
-  --text-soft: #6B5A4E;
-  --shadow-sm: 0 8px 20px rgba(0,0,0,0.05);
-  --shadow-hover: 0 20px 30px -12px rgba(230,75,46,0.15);
-  --radius-card: 24px;
-}
-  
-  /* ===== LOGO 3D ===== */
-.logo-3d-container {
-  perspective: 800px;
-  margin-bottom: 1.8rem;
-  display: flex;
-  justify-content: center;
-}
-.logo-3d {
-  width: 220px;
-  height: 220px;
-  transform-style: preserve-3d;
-  animation: floatRotate 8s infinite cubic-bezier(0.4, 0.2, 0.2, 1);
-  cursor: pointer;
-}
-.logo-face {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 32px;
-  background: linear-gradient(135deg, #FFFFFF, #FEF1E2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  backface-visibility: visible;
-  box-shadow: 0 20px 35px -15px rgba(0,0,0,0.2);
-  border: 1px solid rgba(245,176,66,0.5);
-}
-.logo-face-front { transform: translateZ(25px); }
-.logo-face-back { transform: rotateY(180deg) translateZ(25px); background: #FFF2E4; }
-@keyframes floatRotate {
-  0% { transform: rotateY(0deg) rotateX(5deg) translateY(0px); }
-  50% { transform: rotateY(180deg) rotateX(5deg) translateY(-8px); }
-  100% { transform: rotateY(360deg) rotateX(5deg) translateY(0px); }
-}
-
- body {
-  background: var(--bg-cream);
-  color: var(--text-dark);
-  font-family: var(--font-mono);
-  min-height: 100vh;
-}
-
-  .card, .sidebar, .login-box {
-    background: var(--bg-surface);
-    border: 1px solid var(--border-light);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .btn {
-    background: var(--tomato);
-    color: white;
-  }
-
-  .btn.secondary {
-    background: white;
-    color: var(--tomato);
-    border: 1.5px solid var(--tomato);
-  }
+:root{--bg:#0d0f14;--surface:#161922;--surface2:#1e2330;--border:#2a3045;--accent:#00e5a0;--accent2:#0066ff;--warn:#ffaa00;--danger:#ff4455;--text:#e8eaf2;--muted:#6b7491;--radius:10px;--font-head:'Syne',sans-serif;--font-mono:'IBM Plex Mono',monospace}
 *{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .screen{display:none;min-height:100vh}.screen.active{display:flex;flex-direction:column}
 #login-screen{align-items:center;justify-content:center;padding:2rem;background:var(--bg);position:relative;overflow:hidden}
@@ -171,10 +95,9 @@
   line-height: 1;
   margin-bottom: .3rem;
 }
-.kpi-card.green { border-left-color: var(--sage); }
-.kpi-card.blue { border-left-color: var(--gold); }
-.kpi-card.orange { border-left-color: var(--tomato); }
-  .kpi-val { color: var(--tomato); }
+.kpi-card.green  .kpi-val { color: #00e5a0; }
+.kpi-card.blue   .kpi-val { color: #4d94ff; }
+.kpi-card.orange .kpi-val { color: #ffaa00; }
 .kpi-card.red    .kpi-val { color: #ff4455; }
 .kpi-card.purple .kpi-val { color: #a07aff; }
 .kpi-card.teal   .kpi-val { color: #00c8b4; }
@@ -434,19 +357,6 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 
 <!-- LOGIN -->
 <div id="login-screen" class="screen active">
-  <div class="logo-3d-container">
-    <div class="logo-3d">
-      <div class="logo-face logo-face-front">
-        <h1>GASTRO<br>MIXTE</h1>
-        <p>MAÎTRE FROMAGER</p>
-        <div class="logo-sub">artisan · tradition</div>
-      </div>
-      <div class="logo-face logo-face-back">
-        <h1>🧀<br>TERROIR</h1>
-        <p>EXCELLENCE</p>
-      </div>
-    </div>
-  </div>
   <div class="login-box">
     <div class="login-logo">Ware<span>Truck</span></div>
     <div class="login-sub">Système de suivi des camions — Entrepôt</div>
