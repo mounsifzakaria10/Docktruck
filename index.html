@@ -2,280 +2,355 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>GASTROMIXTE • Suivi camions & logistique fromagère</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WareTruck — Suivi des camions</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Three.js pour le logo 3D -->
-<script type="importmap">
-  { "imports": { "three": "https://unpkg.com/three@0.128.0/build/three.module.js" } }
-</script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700&family=Playfair+Display:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+:root{--bg:#0d0f14;--surface:#161922;--surface2:#1e2330;--border:#2a3045;--accent:#00e5a0;--accent2:#0066ff;--warn:#ffaa00;--danger:#ff4455;--text:#e8eaf2;--muted:#6b7491;--radius:10px;--font-head:'Syne',sans-serif;--font-mono:'IBM Plex Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.screen{display:none;min-height:100vh}.screen.active{display:flex;flex-direction:column}
+#login-screen{align-items:center;justify-content:center;padding:2rem;background:var(--bg);position:relative;overflow:hidden}
+#login-screen::before{content:'';position:absolute;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(0,229,160,.06) 0%,transparent 70%);pointer-events:none}
+#login-screen::after{content:'';position:absolute;bottom:-200px;right:-200px;width:500px;height:500px;background:radial-gradient(circle,rgba(0,102,255,.05) 0%,transparent 70%);pointer-events:none}
+.login-box{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2.5rem 2rem;position:relative;z-index:1}
+.login-logo{font-family:var(--font-head);font-size:1.8rem;font-weight:800;letter-spacing:-1px;margin-bottom:.25rem}.login-logo span{color:var(--accent)}
+.login-sub{font-size:.75rem;color:var(--muted);margin-bottom:2rem}
+.tabs{display:flex;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem}
+.tab-btn{flex:1;padding:.55rem;background:none;border:none;color:var(--muted);font-family:var(--font-mono);font-size:.75rem;cursor:pointer;transition:all .2s}
+.tab-btn.active{background:var(--accent);color:#000;font-weight:500}
+.field{margin-bottom:1rem}.field label{display:block;font-size:.7rem;color:var(--muted);margin-bottom:.4rem;letter-spacing:.05em;text-transform:uppercase}
+.field input,.field select,.field textarea{width:100%;padding:.65rem .85rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.85rem;outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}.field select option{background:var(--surface2)}.field textarea{resize:vertical;min-height:70px}
+.btn{width:100%;padding:.75rem;background:var(--accent);color:#000;border:none;border-radius:var(--radius);font-family:var(--font-head);font-size:.9rem;font-weight:700;cursor:pointer;transition:opacity .2s;letter-spacing:.03em}
+.btn:hover{opacity:.88}.btn.secondary{background:none;color:var(--accent);border:1px solid var(--accent)}.btn.danger{background:var(--danger);color:#fff}
+.btn.sm{width:auto;padding:.4rem .85rem;font-size:.78rem;border-radius:6px}.btn.warn-btn{background:var(--warn);color:#000}.btn.info-btn{background:var(--accent2);color:#fff}
+.msg{font-size:.78rem;margin-top:.75rem;padding:.6rem .85rem;border-radius:6px;display:none}
+.msg.error{background:rgba(255,68,85,.12);color:var(--danger);border:1px solid rgba(255,68,85,.3);display:block}
+.msg.success{background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.25);display:block}
+.app-layout{display:flex;min-height:100vh}
+.sidebar{width:230px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:1.5rem 0;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.sidebar-logo{padding:0 1.25rem 1.5rem;font-family:var(--font-head);font-size:1.2rem;font-weight:800;letter-spacing:-.5px;border-bottom:1px solid var(--border);margin-bottom:1rem}.sidebar-logo span{color:var(--accent)}
+.sidebar-role{padding:0 1.25rem 1rem;font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.25rem;font-size:.82rem;color:var(--muted);cursor:pointer;transition:all .15s;border-left:2px solid transparent}
+.nav-item:hover{color:var(--text);background:var(--surface2)}.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,229,160,.06)}.nav-item svg{width:16px;height:16px;flex-shrink:0}
+.sidebar-bottom{margin-top:auto;padding:1rem 1.25rem 0;border-top:1px solid var(--border)}
+.user-chip{font-size:.75rem;color:var(--muted);margin-bottom:.75rem}.user-chip strong{display:block;color:var(--text)}
+.main-content{margin-left:230px;flex:1;padding:2rem;min-height:100vh}
+.page{display:none}.page.active{display:block}
+.page-title{font-family:var(--font-head);font-size:1.5rem;font-weight:700;margin-bottom:.25rem}
+.page-sub{font-size:.75rem;color:var(--muted);margin-bottom:1.75rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem}
+.card-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1rem}
 
-  /* ===== DESIGN CLAIR ET VIVANT – INSPIRATION LOGO GASTROMIXTE ===== */
-  :root {
-    --bg-cream: #FFF9F0;          /* fond doux et chaleureux */
-    --surface-white: #FFFFFF;      /* cartes / modales */
-    --surface-warm: #FFF4E6;       /* alternance légère */
-    --border-gold: #F0D8A8;        /* touches dorées */
-    --accent-orange: #E67E22;       /* orange vif (fromage affiné) */
-    --accent-amber: #F39C12;        /* ambre / miel */
-    --accent-terracotta: #D35400;   /* terre cuite */
-    --danger-sweet: #E74C3C;
-    --text-dark: #2C3E2F;           /* vert profond */
-    --text-muted: #7E6B4E;          /* brun élégant */
-    --shadow-sm: 0 8px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.05);
-    --shadow-md: 0 12px 28px rgba(0,0,0,0.06);
-    --radius-card: 24px;
-    --font-sans: 'Inter', system-ui, sans-serif;
-    --font-display: 'Playfair Display', serif;
-  }
+/* ===== DASHBOARD REDESIGN ===== */
+.dash-hero {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.kpi-card {
+  position: relative;
+  border-radius: 16px;
+  padding: 1.4rem 1.2rem;
+  overflow: hidden;
+  border: 1px solid transparent;
+  transition: transform .2s, box-shadow .2s;
+}
+.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+.kpi-card.green  { background: linear-gradient(135deg,#0a2218 0%,#0d1f14 100%); border-color: rgba(0,229,160,.3); }
+.kpi-card.blue   { background: linear-gradient(135deg,#081428 0%,#0a1628 100%); border-color: rgba(0,102,255,.3); }
+.kpi-card.orange { background: linear-gradient(135deg,#1f1400 0%,#1a1200 100%); border-color: rgba(255,170,0,.3); }
+.kpi-card.red    { background: linear-gradient(135deg,#1f0408 0%,#180306 100%); border-color: rgba(255,68,85,.3); }
+.kpi-card.purple { background: linear-gradient(135deg,#10082a 0%,#0c0620 100%); border-color: rgba(120,80,255,.3); }
+.kpi-card.teal   { background: linear-gradient(135deg,#042020 0%,#031818 100%); border-color: rgba(0,200,180,.3); }
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  opacity: .12;
+}
+.kpi-card.green::before  { background: #00e5a0; }
+.kpi-card.blue::before   { background: #0066ff; }
+.kpi-card.orange::before { background: #ffaa00; }
+.kpi-card.red::before    { background: #ff4455; }
+.kpi-card.purple::before { background: #7850ff; }
+.kpi-card.teal::before   { background: #00c8b4; }
+.kpi-icon {
+  font-size: 1.4rem;
+  margin-bottom: .6rem;
+  display: block;
+}
+.kpi-val {
+  font-family: var(--font-head);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: .3rem;
+}
+.kpi-card.green  .kpi-val { color: #00e5a0; }
+.kpi-card.blue   .kpi-val { color: #4d94ff; }
+.kpi-card.orange .kpi-val { color: #ffaa00; }
+.kpi-card.red    .kpi-val { color: #ff4455; }
+.kpi-card.purple .kpi-val { color: #a07aff; }
+.kpi-card.teal   .kpi-val { color: #00c8b4; }
+.kpi-label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.kpi-trend {
+  position: absolute;
+  bottom: .75rem; right: .85rem;
+  font-size: .65rem;
+  color: var(--muted);
+}
 
-  body {
-    background: var(--bg-cream);
-    color: var(--text-dark);
-    font-family: var(--font-sans);
-    min-height: 100vh;
-  }
+.dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+.dash-row-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
 
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: #F3E9D2; border-radius: 8px; }
-  ::-webkit-scrollbar-thumb { background: var(--accent-orange); border-radius: 8px; }
+/* Dock activity pills */
+.dock-activity {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.dock-pill {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem .85rem;
+  background: var(--surface2);
+  border-radius: 8px;
+  border-left: 3px solid var(--border);
+  transition: border-color .2s;
+}
+.dock-pill.active { border-left-color: var(--accent); }
+.dock-pill-name { font-size: .8rem; font-weight: 600; flex: 1; }
+.dock-pill-count { font-size: .72rem; color: var(--muted); }
+.dock-pill-bar { flex: 2; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.dock-pill-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .5s ease; }
 
-  .screen { display: none; min-height: 100vh; }
-  .screen.active { display: flex; flex-direction: column; }
+/* Vehicle breakdown */
+.veh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.veh-item {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: .75rem;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+.veh-item-val { font-family: var(--font-head); font-size: 1.4rem; font-weight: 800; color: var(--accent2); }
+.veh-item-lbl { font-size: .65rem; color: var(--muted); margin-top: .2rem; }
 
-  /* LOGIN */
-  #login-screen {
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    background: linear-gradient(135deg, #FFF3E0, #FFE8D4);
-  }
-  .login-box {
-    width: 100%;
-    max-width: 460px;
-    background: var(--surface-white);
-    border-radius: 40px;
-    padding: 2.5rem 2rem;
-    box-shadow: var(--shadow-md), 0 0 0 1px rgba(230,126,34,0.15);
-  }
-  .login-logo {
-    font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 800;
-    background: linear-gradient(135deg, #D35400, #E67E22);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-  .login-logo span { background: none; color: var(--accent-terracotta); }
-  .login-sub {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    margin-bottom: 1.8rem;
-    border-left: 3px solid var(--accent-orange);
-    padding-left: 0.75rem;
-  }
-  .tabs {
-    display: flex;
-    background: var(--surface-warm);
-    border-radius: 60px;
-    padding: 0.25rem;
-    margin-bottom: 1.8rem;
-  }
-  .tab-btn {
-    flex: 1;
-    background: transparent;
-    border: none;
-    padding: 0.6rem;
-    font-weight: 600;
-    border-radius: 40px;
-    cursor: pointer;
-    color: var(--text-muted);
-    transition: all 0.2s;
-  }
-  .tab-btn.active {
-    background: var(--accent-orange);
-    color: white;
-    box-shadow: 0 2px 6px rgba(230,126,34,0.3);
-  }
-  .field label {
-    display: block;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    margin-bottom: 0.4rem;
-  }
-  .field input, .field select, .field textarea {
-    width: 100%;
-    padding: 0.7rem 1rem;
-    background: #FEFAF2;
-    border: 1.5px solid #F0D8B0;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    transition: all 0.2s;
-  }
-  .field input:focus, .field select:focus {
-    border-color: var(--accent-orange);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(230,126,34,0.2);
-  }
-  .btn {
-    width: 100%;
-    padding: 0.8rem;
-    background: var(--accent-orange);
-    border: none;
-    border-radius: 50px;
-    font-weight: 700;
-    color: white;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .btn:hover { background: var(--accent-terracotta); transform: translateY(-1px); }
-  .btn.secondary { background: transparent; border: 1.5px solid var(--accent-orange); color: var(--accent-orange); }
-  .btn.danger { background: var(--danger-sweet); }
-  .btn.sm { width: auto; padding: 0.45rem 1.2rem; font-size: 0.8rem; border-radius: 40px; }
-  .msg.error { background: #FEF2F0; color: var(--danger-sweet); border-left: 4px solid var(--danger-sweet); padding: 0.6rem; border-radius: 16px; margin-top: 1rem; }
-  .msg.success { background: #ECF9EC; color: #2C6E2F; border-left: 4px solid #2C6E2F; }
+/* Recent ops table in dashboard */
+.recent-ops-table { font-size: .78rem; }
+.recent-ops-table thead th { font-size: .62rem; padding: .5rem .6rem; }
+.recent-ops-table tbody td { padding: .6rem .6rem; }
 
-  /* APP LAYOUT */
-  .app-layout { display: flex; min-height: 100vh; }
-  .sidebar {
-    width: 270px;
-    background: var(--surface-white);
-    border-right: 1px solid var(--border-gold);
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    height: 100vh;
-    z-index: 30;
-    box-shadow: var(--shadow-sm);
-  }
-  .sidebar-logo {
-    padding: 1.8rem 1.5rem 1rem;
-    font-family: var(--font-display);
-    font-size: 1.6rem;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    border-bottom: 2px solid var(--border-gold);
-  }
-  .logo-3d-wrapper {
-    width: 46px;
-    height: 46px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .sidebar-logo span { color: var(--accent-orange); }
-  .sidebar-role {
-    padding: 0.6rem 1rem;
-    margin: 0.8rem 1rem;
-    background: var(--surface-warm);
-    border-radius: 40px;
-    text-align: center;
-    font-size: 0.7rem;
-    font-weight: 700;
-    color: var(--accent-terracotta);
-  }
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.7rem 1.5rem;
-    margin: 0.2rem 0.8rem;
-    border-radius: 50px;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .nav-item svg { width: 18px; height: 18px; stroke: currentColor; }
-  .nav-item.active {
-    background: linear-gradient(95deg, #FFF1E0, #FFE6D0);
-    color: var(--accent-orange);
-    font-weight: 600;
-  }
-  .main-content {
-    margin-left: 270px;
-    flex: 1;
-    padding: 2rem 2rem 2rem 2.5rem;
-    background: var(--bg-cream);
-  }
-  .page-title {
-    font-family: var(--font-display);
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--accent-terracotta);
-  }
-  .page-sub {
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 1.5rem;
-    border-left: 3px solid var(--accent-amber);
-    padding-left: 0.8rem;
-  }
-  .card {
-    background: var(--surface-white);
-    border-radius: var(--radius-card);
-    padding: 1.6rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid var(--border-gold);
-    box-shadow: var(--shadow-sm);
-  }
-  .card-title {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-weight: 700;
-    color: var(--accent-terracotta);
-    margin-bottom: 1rem;
-  }
-  .badge {
-    display: inline-block;
-    padding: 0.2rem 0.7rem;
-    border-radius: 30px;
-    font-size: 0.7rem;
-    font-weight: 600;
-  }
-  .badge.waiting { background: #F1E6D3; color: #B86B1F; }
-  .badge.arrived { background: #E1F0FA; color: #1F6392; }
-  .badge.completed { background: #E0F2E0; color: #2E6B2E; }
-  table { width: 100%; border-collapse: collapse; }
-  thead th { text-align: left; padding: 0.7rem 0.5rem; font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border-gold); }
-  tbody td { padding: 0.7rem 0.5rem; border-bottom: 1px solid #F0E2CF; }
-  .kpi-card {
-    background: white;
-    border-radius: 24px;
-    padding: 1.2rem;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-gold);
-  }
-  .kpi-val { font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; color: var(--accent-orange); }
-  .dash-hero { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-  .planning-excel-wrap { overflow-x: auto; border-radius: 24px; background: white; border: 1px solid var(--border-gold); }
-  .cell-edit, .time-input { background: #FEFAF2; border: 1px solid #F0D8B0; border-radius: 20px; padding: 0.3rem 0.6rem; font-family: var(--font-sans); }
-  .hamburger { display: none; }
-  @media (max-width: 768px) {
-    .sidebar { transform: translateX(-100%); transition: 0.2s; }
-    .sidebar.open { transform: translateX(0); }
-    .main-content { margin-left: 0; padding: 1.5rem; }
-    .hamburger { display: flex; position: fixed; top: 1rem; left: 1rem; z-index: 50; background: white; border: 1px solid var(--border-gold); padding: 0.5rem 1rem; border-radius: 40px; gap: 0.5rem; font-weight: 600; cursor: pointer; }
-    .nav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.2); z-index: 20; backdrop-filter: blur(2px); }
-    .nav-backdrop.open { display: block; }
-  }
+/* ===== STATS GRID (legacy) ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-line,var(--border))}
+.stat-val{font-family:var(--font-head);font-size:2rem;font-weight:800}.stat-val.green{color:var(--accent)}.stat-val.blue{color:var(--accent2)}.stat-val.orange{color:var(--warn)}.stat-val.red{color:var(--danger)}
+.stat-label{font-size:.7rem;color:var(--muted);margin-top:.25rem}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:4px;font-size:.7rem;font-weight:500;letter-spacing:.05em;text-transform:uppercase}
+.badge.waiting{background:rgba(107,116,145,.2);color:var(--muted)}
+.badge.arrived{background:rgba(0,102,255,.15);color:var(--accent2)}
+.badge.loading{background:rgba(255,170,0,.15);color:var(--warn)}
+.badge.completed{background:rgba(0,229,160,.12);color:var(--accent)}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead th{text-align:left;padding:.65rem .85rem;font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:1px solid var(--border);font-weight:500}
+tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tbody tr:hover{background:var(--surface2)}tbody td{padding:.75rem .85rem}
+.no-data{text-align:center;color:var(--muted);padding:3rem;font-size:.8rem}
+.filter-bar{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center}
+.filter-bar input,.filter-bar select{padding:.5rem .85rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none}
+.filter-bar input{flex:1;min-width:160px}.filter-bar input:focus,.filter-bar select:focus{border-color:var(--accent)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.75rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--font-head);font-size:1.1rem;font-weight:700;margin-bottom:1.25rem}
+.divider{display:flex;align-items:center;gap:.75rem;margin:1rem 0}.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}.divider span{font-size:.7rem;color:var(--muted)}
+.profile-header{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.avatar{width:64px;height:64px;border-radius:50%;background:var(--surface2);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--accent);flex-shrink:0}
+.profile-info h2{font-family:var(--font-head);font-size:1.2rem;font-weight:700}.profile-info p{font-size:.78rem;color:var(--muted);margin-top:.25rem}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+.info-item label{font-size:.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);display:block;margin-bottom:.3rem}.info-item span{font-size:.88rem}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--accent);color:#000;padding:.75rem 1.25rem;border-radius:var(--radius);font-size:.82rem;font-weight:500;z-index:9999;opacity:0;transform:translateY(12px);transition:all .3s;pointer-events:none;max-width:320px}
+.toast.show{opacity:1;transform:translateY(0)}.toast.err{background:var(--danger);color:#fff}.toast.info{background:var(--accent2);color:#fff}
+.hamburger{display:none}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);margin-left:auto;flex-shrink:0}
+
+/* ===== PLANNING ===== */
+.badge.shift1{background:rgba(0,229,160,.15);color:var(--accent)}
+.badge.shift2{background:rgba(255,170,0,.15);color:var(--warn)}
+.badge.dzl{background:rgba(255,68,85,.15);color:var(--danger)}
+
+/* ===== QR CARD ===== */
+.qr-card-photo{display:flex;justify-content:center;margin:.5rem 0}
+.qr-card-inner{width:320px;background:linear-gradient(135deg,#0d1f14 0%,#0a1628 50%,#0d1f14 100%);border:1px solid var(--accent);border-radius:20px;padding:1.5rem;box-shadow:0 0 40px rgba(0,229,160,.15);position:relative;overflow:hidden}
+.qr-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.qr-card-logo{font-family:var(--font-head);font-size:1rem;font-weight:800;color:var(--text);letter-spacing:-.5px}.qr-card-logo span{color:var(--accent)}
+.qr-card-badge{font-size:.6rem;font-weight:600;letter-spacing:.12em;color:#000;background:var(--accent);padding:.2rem .5rem;border-radius:4px}
+.qr-card-name{font-family:var(--font-head);font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:.2rem}
+.qr-card-vehicle{font-size:.72rem;color:var(--muted);margin-bottom:1.25rem;letter-spacing:.05em}
+.qr-card-qr{display:flex;justify-content:center;margin-bottom:.75rem}
+.qr-card-code{text-align:center;font-size:.6rem;color:var(--muted);letter-spacing:.08em;margin-bottom:1rem;word-break:break-all}
+.qr-card-footer{text-align:center;font-size:.65rem;color:rgba(107,116,145,.7);border-top:1px solid rgba(42,48,69,.5);padding-top:.75rem}
+.qr-white-bg canvas,.qr-white-bg img{border-radius:8px!important;border:4px solid #fff!important;box-shadow:0 0 0 1px rgba(0,229,160,.4),0 4px 20px rgba(0,0,0,.4)!important;background:#fff!important;display:block!important}
+
+/* ===== SCAN STEP ===== */
+.scan-step-box{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.scan-step{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:center}
+.scan-step.done{border-color:var(--accent)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.8rem;margin:0 auto .75rem}
+.scan-step.done .step-num{background:var(--accent);color:#000}.step-label{font-size:.78rem;font-weight:500}.step-val{font-size:.7rem;color:var(--accent);margin-top:.25rem;word-break:break-all}
+.status-waiting-box{background:rgba(107,116,145,.1);border:1px solid var(--muted);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--muted);line-height:1.6}
+.status-active-box{background:rgba(0,102,255,.08);border:1px solid var(--accent2);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--accent2);line-height:1.6}
+
+/* ===== PLANNING ADMIN TABLE (Excel-style) ===== */
+.planning-excel-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.planning-excel {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .75rem;
+  min-width: 1200px;
+}
+.planning-excel thead tr {
+  background: linear-gradient(90deg, #1a2035 0%, #161922 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.planning-excel thead th {
+  padding: .6rem .6rem;
+  font-size: .62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  background: #1a2035;
+}
+.planning-excel thead th:last-child { border-right: none; }
+.planning-excel tbody tr {
+  border-bottom: 1px solid rgba(42,48,69,.4);
+  transition: background .12s;
+}
+.planning-excel tbody tr:hover { background: rgba(0,229,160,.04); }
+.planning-excel tbody td {
+  padding: .4rem .5rem;
+  border-right: 1px solid rgba(42,48,69,.3);
+  vertical-align: middle;
+}
+.planning-excel tbody td:last-child { border-right: none; }
+
+/* Inline editable cell */
+.cell-edit {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  width: 100%;
+  padding: .2rem .3rem;
+  border-radius: 4px;
+  outline: none;
+  transition: background .15s, border .15s;
+}
+.cell-edit:focus {
+  background: rgba(0,229,160,.08);
+  outline: 1px solid var(--accent);
+}
+.cell-edit option { background: var(--surface2); }
+
+/* Checkbox oui/non */
+.check-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.check-cell input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+/* Time input in planning */
+.time-input {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .73rem;
+  width: 80px;
+  padding: .2rem .3rem;
+  border-radius: 4px;
+  outline: none;
+  transition: background .15s;
+}
+.time-input:focus { background: rgba(0,229,160,.08); outline: 1px solid var(--accent); }
+.time-input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(.4); }
+
+/* Computed duration cell */
+.dur-cell {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--accent);
+  text-align: center;
+}
+
+/* Planning filter bar */
+.filter-bar-modern {
+  background: var(--surface);
+  padding: 1rem;
+  border-radius: 16px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  border: 1px solid var(--border);
+}
+
+/* Planning stats pills */
+.planning-stats { display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem; }
+.stat-pill {
+  background: var(--surface2);
+  border-radius: 40px;
+  padding: .4rem 1rem;
+  font-size: .75rem;
+  border: 1px solid var(--border);
+}
+.stat-pill strong { font-weight:700;color:var(--accent);margin-right:.4rem; }
+
+/* Row counter */
+.row-num { color: var(--muted); font-size: .65rem; text-align: center; }
+
+@media(max-width:700px){
+.sidebar{transform:translateX(-100%);transition:transform .25s}.sidebar.open{transform:translateX(0)}
+.main-content{margin-left:0;padding:1rem}
+.hamburger{display:flex;align-items:center;gap:.6rem;position:fixed;top:1rem;left:1rem;z-index:200;background:var(--surface);border:1px solid var(--border);padding:.5rem .85rem;border-radius:8px;font-size:.75rem;cursor:pointer;color:var(--text)}
+.info-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}
+.dash-hero{grid-template-columns:1fr 1fr}
+.dash-row,.dash-row-3{grid-template-columns:1fr}
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.page.active{animation:fadeIn .25s ease}
+@keyframes countUp{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.kpi-val{animation:countUp .4s ease forwards}
+.nav-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}.nav-backdrop.open{display:block}
 </style>
 </head>
 <body>
@@ -283,235 +358,1279 @@
 <!-- LOGIN -->
 <div id="login-screen" class="screen active">
   <div class="login-box">
-    <div class="login-logo">GASTRO<span>MIXTE</span></div>
-    <div class="login-sub">Maître Fromager — Logistique & suivi des camions</div>
+    <div class="login-logo">Ware<span>Truck</span></div>
+    <div class="login-sub">Système de suivi des camions — Entrepôt</div>
     <div class="tabs">
-      <button class="tab-btn active" onclick="window.switchAuthTab('login')">Connexion</button>
-      <button class="tab-btn" onclick="window.switchAuthTab('register')">Créer un compte</button>
+      <button class="tab-btn active" onclick="switchAuthTab('login')">Connexion</button>
+      <button class="tab-btn" onclick="switchAuthTab('register')">Créer un compte</button>
     </div>
     <div id="form-login">
-      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="fromage@terroir.fr"></div>
-      <div class="field"><label>Mot de passe</label><input type="password" id="login-pass" placeholder="••••••"></div>
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="exemple@email.com"></div>
+      <div class="field"><label>Mot de passe</label><input type="password" id="login-pass" placeholder="••••••••"></div>
       <div id="login-msg" class="msg"></div>
-      <button class="btn" onclick="window.doLogin()">Se connecter 🧀</button>
-      <div style="margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--border-gold)">
-        <div style="font-size:0.7rem; margin-bottom:0.5rem; color:var(--text-muted)">Comptes démo :</div>
-        <div style="display:flex; gap:0.5rem; flex-wrap:wrap">
-          <button class="btn sm secondary" onclick="window.quickLogin('driver@demo.com','drv123')">Chauffeur</button>
-          <button class="btn sm secondary" onclick="window.quickLogin('operator@demo.com','op123')">Opérateur</button>
-          <button class="btn sm secondary" onclick="window.quickLogin('admin@demo.com','admin123')">Admin</button>
+      <button class="btn" onclick="doLogin()">Se connecter</button>
+      <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border)">
+        <div style="font-size:.7rem;color:var(--muted);margin-bottom:.6rem">Comptes de démo :</div>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn sm secondary" onclick="quickLogin('driver@demo.com','drv123')">Chauffeur</button>
+          <button class="btn sm secondary" onclick="quickLogin('operator@demo.com','op123')">Opérateur</button>
+          <button class="btn sm secondary" onclick="quickLogin('admin@demo.com','admin123')">Admin</button>
         </div>
       </div>
     </div>
     <div id="form-register" style="display:none">
-      <div class="field"><label>Nom complet</label><input type="text" id="reg-name" placeholder="Jean Fromager"></div>
-      <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="contact@gastromixte.fr"></div>
-      <div class="field"><label>Téléphone</label><input type="tel" id="reg-phone" placeholder="+33 6 ..."></div>
-      <div class="field"><label>Mot de passe</label><input type="password" id="reg-pass" placeholder="6 caractères min"></div>
+      <div class="field"><label>Nom complet</label><input type="text" id="reg-name" placeholder="Mohamed Benali"></div>
+      <div class="field"><label>Email</label><input type="email" id="reg-email" placeholder="exemple@email.com"></div>
+      <div class="field"><label>Téléphone</label><input type="tel" id="reg-phone" placeholder="+212 6XX XXX XXX"></div>
+      <div class="field"><label>Mot de passe</label><input type="password" id="reg-pass" placeholder="Min. 6 caractères"></div>
       <div class="field"><label>Rôle</label><select id="reg-role"><option value="driver">Chauffeur</option></select></div>
-      <div id="reg-vehicle-field" class="field"><label>Type véhicule</label><select id="reg-vehicle"><option value="CAM-SOLO">CAMION-SOLO</option><option value="REMQ">REMORQUE</option><option value="FRIGO">FRIGO FROMAGE</option></select></div>
+      <div id="reg-vehicle-field" class="field">
+        <label>Type de véhicule</label>
+        <select id="reg-vehicle">
+          <option value="CAM-SOLO">CAMION-SOLO</option>
+          <option value="REMQ">REMORQUE</option>
+          <option value="CANTE">CANTE</option>
+          <option value="DUCATO">DUCATO</option>
+        </select>
+      </div>
       <div id="reg-msg" class="msg"></div>
-      <button class="btn" onclick="window.doRegister()">Créer mon compte</button>
+      <button class="btn" onclick="doRegister()">Créer le compte</button>
     </div>
   </div>
 </div>
 
-<!-- APP PRINCIPALE -->
+<!-- APP -->
 <div id="app-screen" class="screen">
-  <button class="hamburger" onclick="window.toggleSidebar()"><svg width="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg> Menu</button>
-  <div class="nav-backdrop" id="nav-backdrop" onclick="window.closeSidebar()"></div>
+  <button class="hamburger" onclick="toggleSidebar()">
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg> Menu
+  </button>
+  <div class="nav-backdrop" id="nav-backdrop" onclick="closeSidebar()"></div>
   <div class="app-layout">
     <nav class="sidebar" id="sidebar">
-      <div class="sidebar-logo">
-        <div id="logo3dContainer" class="logo-3d-wrapper"></div>
-        <span>GASTRO<span>TRACK</span></span>
-      </div>
-      <div class="sidebar-role" id="sidebar-role-label"></div>
+      <div class="sidebar-logo">Ware<span>Track</span></div>
+      <div class="sidebar-role" id="sidebar-role-label">— Rôle —</div>
       <div id="nav-items"></div>
-      <div class="sidebar-bottom" style="margin-top: auto; padding: 1.5rem;">
-        <div class="user-chip" style="font-size:0.75rem"><strong id="sidebar-username"></strong><br><span id="sidebar-email-disp" style="color:var(--text-muted)"></span></div>
-        <button class="btn danger sm" onclick="window.doLogout()" style="margin-top: 0.75rem;">Déconnexion</button>
+      <div class="sidebar-bottom">
+        <div class="user-chip"><strong id="sidebar-username">Utilisateur</strong><span id="sidebar-email-disp"></span></div>
+        <button class="btn danger sm" onclick="doLogout()">Déconnexion</button>
       </div>
     </nav>
-    <main class="main-content" id="mainContent">
-      <!-- PAGES (contenu dynamique) -->
-      <div id="page-driver-profile" class="page"></div>
-      <div id="page-driver-logs" class="page"></div>
-      <div id="page-driver-planning" class="page"></div>
-      <div id="page-operator-scan" class="page"></div>
-      <div id="page-admin-dashboard" class="page"></div>
-      <div id="page-admin-logs" class="page"></div>
-      <div id="page-admin-drivers" class="page"></div>
-      <div id="page-admin-docks" class="page"></div>
-      <div id="page-admin-planning" class="page"></div>
+    <main class="main-content">
+
+      <!-- ===== DRIVER : PROFIL ===== -->
+      <div id="page-driver-profile" class="page">
+        <div class="page-title">Mon profil</div>
+        <div class="page-sub">Vos informations et votre QR code personnel</div>
+        <div class="card">
+          <div class="profile-header" id="driver-profile-header"></div>
+          <div class="info-grid" id="driver-info-grid"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Mon QR Code personnel</div>
+          <div class="qr-card-photo">
+            <div class="qr-card-inner">
+              <div class="qr-card-header">
+                <div class="qr-card-logo">Ware<span>Truck</span></div>
+                <div class="qr-card-badge">CHAUFFEUR</div>
+              </div>
+              <div class="qr-card-name" id="qr-card-name">—</div>
+              <div class="qr-card-vehicle" id="qr-card-vehicle">—</div>
+              <div class="qr-card-qr">
+                <div id="driver-qr-container" class="qr-white-bg" style="width:200px;height:200px;"></div>
+              </div>
+              <div class="qr-card-code" id="driver-qr-label">—</div>
+              <div class="qr-card-footer">Présentez cette carte à l'opérateur du dock</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:.75rem;margin-top:1.25rem;flex-wrap:wrap">
+            <button class="btn sm" onclick="downloadDriverCard()">📥 Télécharger la carte</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">📷 Scanner Quai</div>
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;line-height:1.7">
+            Scannez le QR code du Quai pour signaler votre présence.<br>
+            <strong style="color:var(--warn)">⚠️ L'entrée et la sortie seront enregistrées par l'opérateur.</strong>
+          </div>
+          <div id="driver-scan-result" style="display:none;margin-bottom:1rem">
+            <div class="status-waiting-box">
+              <div style="font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:.4rem" id="driver-scan-dock-name"></div>
+              Vous êtes en attente au dock. L'opérateur va scanner votre QR code pour valider l'entrée.
+              <div style="margin-top:.75rem"><button class="btn sm warn-btn" onclick="driverResetScan()">Annuler</button></div>
+            </div>
+          </div>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+            <button class="btn sm" onclick="openDriverScanner()">📷 Ouvrir la caméra</button>
+          </div>
+          <div id="driver-qr-reader" style="border-radius:8px;overflow:hidden;display:none;"></div>
+          <div id="driver-scan-manual" style="display:none;margin-top:1rem">
+            <div class="divider"><span>OU SAISIR MANUELLEMENT</span></div>
+            <div style="display:flex;gap:.5rem">
+              <input type="text" id="driver-manual-qr" placeholder="Code QR du dock..." style="flex:1;padding:.5rem .75rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.8rem;outline:none">
+              <button class="btn sm" onclick="driverSubmitManual()">Valider</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Statut actuel</div>
+          <div id="driver-status-display" style="font-size:1rem;padding:.5rem 0"></div>
+        </div>
+      </div>
+
+      <!-- ===== DRIVER : MES PASSAGES ===== -->
+      <div id="page-driver-logs" class="page">
+        <div class="page-title">Mes passages</div>
+        <div class="page-sub">Historique de vos entrées et sorties au dock</div>
+        <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Dock</th><th>Attente</th><th>Entrée</th><th>Sortie</th><th>Durée charg.</th><th>Statut</th></tr></thead><tbody id="driver-logs-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- ===== DRIVER : MON PLANNING ===== -->
+      <div id="page-driver-planning" class="page">
+        <div class="page-title">Mon planning</div>
+        <div class="page-sub">Vos missions assignées</div>
+        <div id="driver-planning-list"></div>
+      </div>
+
+      <!-- ===== OPERATOR : SCAN ===== -->
+      <div id="page-operator-scan" class="page">
+        <div class="page-title">Scanner QR Chauffeur</div>
+        <div class="page-sub">1er scan = Entrée au dock · 2ème scan = Sortie (opération terminée)</div>
+        <div class="card" style="background:rgba(0,102,255,.06);border-color:var(--accent2)">
+          <div style="font-size:.82rem;color:var(--accent2);line-height:1.8">
+            <strong>Logique de scan :</strong><br>
+            📥 <strong>1er scan</strong> du QR chauffeur → entrée enregistrée automatiquement<br>
+            📤 <strong>2ème scan</strong> du même chauffeur → sortie enregistrée, opération terminée
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem">
+            <button class="btn sm" onclick="openOperatorScanner()">📷 Scanner QR Chauffeur</button>
+            <button class="btn sm secondary" onclick="openManualOpModal()">⌨️ Saisie manuelle</button>
+          </div>
+          <div id="op-scan-result" style="display:none;padding:1rem;background:var(--surface2);border-radius:8px;border:1px solid var(--border);margin-top:.75rem">
+            <div id="op-scan-text" style="font-size:.85rem;margin-bottom:.5rem"></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-title">Camions actifs</div><div class="tbl-wrap"><table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente depuis</th><th>Entrée</th><th>Statut</th></tr></thead><tbody id="operator-active-tbody"></tbody></table></div></div>
+        <div class="card"><div class="card-title">QR Codes des docks</div><div id="dock-qr-list" style="display:flex;flex-wrap:wrap;gap:1rem"></div></div>
+      </div>
+
+      <!-- ===== ADMIN : DASHBOARD ===== -->
+      <div id="page-admin-dashboard" class="page">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+          <div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-sub" style="margin-bottom:0">Vue d'ensemble — KPIs opérationnels</div>
+          </div>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+            <label style="font-size:.72rem;color:var(--muted)">Période :</label>
+            <select id="dash-period" onchange="renderAdminDashboard()" style="padding:.45rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none">
+              <option value="today">Aujourd'hui</option>
+              <option value="week">7 derniers jours</option>
+              <option value="month" selected>30 derniers jours</option>
+              <option value="all">Tout</option>
+            </select>
+            <input type="date" id="dash-from" style="padding:.45rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none">
+            <input type="date" id="dash-to" style="padding:.45rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none">
+            <button class="btn sm" onclick="renderAdminDashboard()">Appliquer</button>
+          </div>
+        </div>
+
+        <!-- KPI Hero Cards -->
+        <div class="dash-hero" id="admin-kpi-hero"></div>
+
+        <!-- Row 2: Active trucks + Dock activity -->
+        <div class="dash-row-3">
+          <div class="card" style="margin-bottom:0">
+            <div class="card-title">🚛 Toutes les opérations de la période</div>
+            <div class="tbl-wrap">
+              <table class="recent-ops-table">
+                <thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente</th><th>Entrée</th><th>Durée</th><th>Statut</th></tr></thead>
+                <tbody id="admin-all-ops-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="card" style="margin-bottom:0">
+              <div class="card-title">📍 Activité par dock</div>
+              <div id="admin-dock-activity" class="dock-activity"></div>
+            </div>
+            <div class="card" style="margin-bottom:0">
+              <div class="card-title">🚚 Par type de véhicule</div>
+              <div id="admin-veh-breakdown" class="veh-grid"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== ADMIN : LOGS ===== -->
+      <div id="page-admin-logs" class="page">
+        <div class="page-title">Tous les passages</div>
+        <div class="page-sub">Historique complet avec filtres et export</div>
+        <div class="filter-bar">
+          <input type="text" id="filter-search" placeholder="Recherche (nom, véhicule...)" oninput="renderAdminLogs()">
+          <select id="filter-status" onchange="renderAdminLogs()">
+            <option value="">Tous</option>
+            <option value="waiting">En attente</option>
+            <option value="arrived">Entrée dock</option>
+            <option value="completed">Terminé</option>
+          </select>
+          <input type="date" id="filter-date" onchange="renderAdminLogs()">
+          <button class="btn sm" onclick="exportCSV()">Export CSV</button>
+        </div>
+        <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente</th><th>Entrée</th><th>Sortie</th><th>T.Attente</th><th>T.Charg.</th><th>Statut</th></tr></thead><tbody id="admin-logs-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- ===== ADMIN : CHAUFFEURS ===== -->
+      <div id="page-admin-drivers" class="page">
+        <div class="page-title">Chauffeurs enregistrés</div>
+        <div class="page-sub">Tous les chauffeurs et leurs QR codes</div>
+        <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Véhicule</th><th>Statut</th><th>QR</th></tr></thead><tbody id="admin-drivers-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- ===== ADMIN : DOCKS ===== -->
+      <div id="page-admin-docks" class="page">
+        <div class="page-title">Gestion des docks</div>
+        <div class="page-sub">QR codes des docks de chargement</div>
+        <div class="card" style="margin-bottom:1.25rem">
+          <div class="card-title">Ajouter un dock</div>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
+            <div class="field" style="flex:1;min-width:200px;margin:0"><label>Nom du dock</label><input type="text" id="new-dock-name" placeholder="ex: Dock A — Zone 1"></div>
+            <button class="btn sm" onclick="addDock()">Ajouter</button>
+          </div>
+        </div>
+        <div id="docks-grid" style="display:flex;flex-wrap:wrap;gap:1rem"></div>
+      </div>
+
+      <!-- ===== ADMIN : PLANNING ===== -->
+      <div id="page-admin-planning" class="page">
+        <div class="page-title">Planning de chargement</div>
+        <div class="page-sub">Gérez et assignez les missions aux chauffeurs — tableau modifiable en direct</div>
+
+        <!-- Create mission form -->
+        <div class="card">
+          <div class="card-title">➕ Créer une mission</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1rem">
+            <div class="field" style="margin:0"><label>Date</label><input type="date" id="plan-date"></div>
+            <div class="field" style="margin:0"><label>Shift</label>
+              <select id="plan-shift">
+                <option value="Shift 1">Shift 1</option>
+                <option value="Shift 2">Shift 2</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0"><label>Du Dépôt</label>
+              <select id="plan-from">
+                <option value="USINE">USINE</option>
+                <option value="DZL">DZL</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0"><label>Au Dépôt (dest.)</label><input type="text" id="plan-to" placeholder="ex: DZL Casa, Usine Fès..."></div>
+            <div class="field" style="margin:0"><label>Chauffeur</label>
+              <select id="plan-driver"><option value="">— Sélectionner —</option></select>
+            </div>
+            <div class="field" style="margin:0"><label>Véhicule (auto)</label><input type="text" id="plan-vehicle" readonly style="background:var(--surface);color:var(--muted)"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:.75rem;align-items:end">
+            <div class="field" style="margin:0"><label>Note / Instructions</label><textarea id="plan-note" placeholder="Instructions particulières..." style="min-height:50px"></textarea></div>
+            <button class="btn sm" onclick="createPlanning()" style="margin-bottom:0;height:fit-content">➕ Créer</button>
+          </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-bar-modern">
+          <div class="field" style="margin:0;flex:1;min-width:140px">
+            <label>📅 Date</label>
+            <input type="date" id="plan-filter-date" oninput="renderAdminPlanning()" style="width:100%">
+          </div>
+          <div class="field" style="margin:0">
+            <label>🕒 Shift</label>
+            <select id="plan-filter-shift" onchange="renderAdminPlanning()">
+              <option value="">Tous</option>
+              <option value="Shift 1">Shift 1</option>
+              <option value="Shift 2">Shift 2</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0;flex:2;min-width:200px">
+            <label>🔍 Chauffeur / destination</label>
+            <input type="text" id="plan-filter-search" placeholder="Nom ou destination..." oninput="renderAdminPlanning()" style="width:100%">
+          </div>
+          <button class="btn sm secondary" onclick="clearPlanFilters()">Réinitialiser</button>
+        </div>
+
+        <!-- Stats pills -->
+        <div class="planning-stats" id="planning-stats-pills"></div>
+
+        <!-- Excel-like table -->
+        <div id="admin-planning-list"></div>
+      </div>
+
     </main>
   </div>
 </div>
 
-<!-- MODALS SIMPLIFIÉES (pour scanner) -->
-<div class="modal-overlay" id="scanner-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); align-items:center; justify-content:center; z-index:1000;"><div class="modal" style="background:white; border-radius:32px; padding:1.5rem; max-width:400px;"><div class="modal-title">Scanner QR</div><div id="qr-reader"></div><div class="field"><label>Manuel</label><input id="manual-qr-input" placeholder="Code"></div><button class="btn sm" onclick="window.submitManualQR()">Valider</button><button class="btn sm secondary" onclick="window.closeScanner()">Fermer</button></div></div>
-<div class="toast" id="toast" style="position:fixed; bottom:20px; right:20px; background:#E67E22; color:white; padding:0.7rem 1.2rem; border-radius:40px; opacity:0; transition:0.2s; pointer-events:none;"></div>
+<!-- MODALS -->
+<div class="modal-overlay" id="scanner-modal">
+  <div class="modal">
+    <div class="modal-title" id="scanner-modal-title">Scanner QR Code</div>
+    <div id="qr-reader" style="width:100%"></div>
+    <div class="divider"><span>OU SAISIR MANUELLEMENT</span></div>
+    <div class="field"><label>Code QR (texte)</label><input type="text" id="manual-qr-input" placeholder="Collez ou tapez le code ici..."></div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn sm" onclick="submitManualQR()">Valider</button>
+      <button class="btn sm secondary" onclick="closeScanner()">Annuler</button>
+    </div>
+  </div>
+</div>
 
-<script type="module">
-  import * as THREE from 'three';
-  function init3DLogo() {
-    const container = document.getElementById('logo3dContainer');
-    if(!container) return;
-    const width = 46, height = 46;
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(45, width/height, 0.1, 1000);
-    camera.position.set(1.2, 1.2, 1.8);
-    camera.lookAt(0,0,0);
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(width, height);
-    renderer.setClearColor(0x000000, 0);
-    container.appendChild(renderer.domElement);
-    const materials = [
-      new THREE.MeshStandardMaterial({ color: 0xE67E22, roughness: 0.3, metalness: 0.2 }),
-      new THREE.MeshStandardMaterial({ color: 0xF39C12, roughness: 0.4 }),
-      new THREE.MeshStandardMaterial({ color: 0xD35400, roughness: 0.5 }),
-      new THREE.MeshStandardMaterial({ color: 0xFFD966, roughness: 0.2, metalness: 0.3 }),
-      new THREE.MeshStandardMaterial({ color: 0xE67E22, roughness: 0.3 }),
-      new THREE.MeshStandardMaterial({ color: 0xBD6B1E })
-    ];
-    const cube = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.9, 0.9), materials);
-    scene.add(cube);
-    const ringGeo = new THREE.TorusKnotGeometry(0.55, 0.08, 64, 8, 2, 3);
-    const ringMat = new THREE.MeshStandardMaterial({ color: 0xF1C40F, emissiveIntensity: 0.2 });
-    const knot = new THREE.Mesh(ringGeo, ringMat);
-    scene.add(knot);
-    const ambient = new THREE.AmbientLight(0xFFFFFF, 0.6);
-    scene.add(ambient);
-    const light = new THREE.DirectionalLight(0xFFE5B4, 1);
-    light.position.set(2, 3, 1);
-    scene.add(light);
-    const backLight = new THREE.PointLight(0xE67E22, 0.4);
-    backLight.position.set(-1, 1, -1.5);
-    scene.add(backLight);
-    function animate() {
-      requestAnimationFrame(animate);
-      cube.rotation.x += 0.008;
-      cube.rotation.y += 0.012;
-      knot.rotation.x = cube.rotation.x * 0.8;
-      knot.rotation.z += 0.01;
-      renderer.render(scene, camera);
-    }
-    animate();
-  }
-  window.init3DLogo = init3DLogo;
-  setTimeout(() => { if(document.getElementById('logo3dContainer')) init3DLogo(); }, 100);
-</script>
+<div class="modal-overlay" id="qr-view-modal">
+  <div class="modal" style="text-align:center">
+    <div class="modal-title" id="qr-view-title">QR Code</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:1rem;padding:1.5rem;background:var(--surface2);border-radius:12px;border:1px solid var(--border)">
+      <div id="qr-view-container" class="qr-white-bg" style="width:220px;height:220px;display:flex;align-items:center;justify-content:center"></div>
+      <div style="font-size:.7rem;color:var(--muted)" id="qr-view-id"></div>
+    </div>
+    <button class="btn sm" style="margin-top:1rem" onclick="downloadQRById()">Télécharger</button>
+    <button class="btn sm secondary" style="margin-top:.5rem" onclick="closeQRView()">Fermer</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="manual-op-modal">
+  <div class="modal">
+    <div class="modal-title">Saisie manuelle — QR Chauffeur</div>
+    <div class="field"><label>Code QR chauffeur</label><input type="text" id="manual-op-input" placeholder="DRIVER-xxxxxxxx..."></div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn sm" onclick="submitManualOp()">Valider</button>
+      <button class="btn sm secondary" onclick="closeManualOpModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <script>
-  // --------------------------------------------------------------
-  // BACKEND COMPLET (SUPABASE) – LOGIQUE CONSERVÉE
-  // --------------------------------------------------------------
-  const SUPABASE_URL = 'https://ivfoeoxhbzvuvtlmbgwi.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2Zm9lb3hoYnp2dXZ0bG1iZ3dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTQ0NjcsImV4cCI6MjA5NDMzMDQ2N30.eWiSABzSQuwfE2EkcRPVr27R0jxQfTnBDbODjNfs6sQ';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  let currentUser = null, currentProfile = null, currentDriver = null;
+document.addEventListener('DOMContentLoaded', async () => {
 
-  // Utilitaires exposés globalement
-  window.showToast = (msg, type) => { const t=document.getElementById('toast'); if(t){ t.textContent=msg; t.style.opacity='1'; setTimeout(()=>t.style.opacity='0', 3000); } };
-  function fmtTime(iso){ if(!iso) return '—'; return new Date(iso).toLocaleString('fr-FR', {hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}); }
-  function fmtDur(min){ if(min==null) return '—'; const h=Math.floor(min/60),m=min%60; return h?`${h}h${m?` ${m}min`:''}`:`${m}min`; }
-  function badgeHtml(s){ const map={waiting:'En attente',arrived:'Au dock',completed:'Terminé'}; return `<span class="badge ${s}">${map[s]||s}</span>`; }
+const SUPABASE_URL      = 'https://ivfoeoxhbzvuvtlmbgwi.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2Zm9lb3hoYnp2dXZ0bG1iZ3dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTQ0NjcsImV4cCI6MjA5NDMzMDQ2N30.eWiSABzSQuwfE2EkcRPVr27R0jxQfTnBDbODjNfs6sQ';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // AUTH
-  window.doLogin = async () => {
-    const email = document.getElementById('login-email').value.trim();
-    const pw = document.getElementById('login-pass').value;
-    if(!email || !pw) { document.getElementById('login-msg').innerHTML = '<div class="msg error">Email et mot de passe requis</div>'; return; }
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
-    if(error) { document.getElementById('login-msg').innerHTML = `<div class="msg error">${error.message}</div>`; return; }
-    await loadUserData(data.user);
-  };
-  window.doRegister = async () => {
-    const name = document.getElementById('reg-name').value.trim();
-    const email = document.getElementById('reg-email').value.trim();
-    const phone = document.getElementById('reg-phone').value.trim();
-    const pw = document.getElementById('reg-pass').value;
-    const role = document.getElementById('reg-role').value;
-    const vehicle = document.getElementById('reg-vehicle').value;
-    if(!name || !email || !pw) { document.getElementById('reg-msg').innerHTML = '<div class="msg error">Tous les champs obligatoires</div>'; return; }
-    const { data: sd, error: se } = await supabase.auth.signUp({ email, password: pw, options: { data: { name, phone, role } } });
-    if(se) { document.getElementById('reg-msg').innerHTML = `<div class="msg error">${se.message}</div>`; return; }
-    if(role === 'driver') {
-      const qrCode = `DRIVER-${sd.user.id}-${Date.now()}`;
-      await supabase.from('drivers').insert([{ user_id: sd.user.id, vehicle, qr_code: qrCode, status: 'waiting' }]);
-    }
-    document.getElementById('reg-msg').innerHTML = '<div class="msg success">Compte créé ! Connectez-vous.</div>';
-    setTimeout(() => window.switchAuthTab('login'), 1500);
-  };
-  window.quickLogin = async (email, pwd) => { document.getElementById('login-email').value = email; document.getElementById('login-pass').value = pwd; await window.doLogin(); };
-  window.doLogout = async () => { await supabase.auth.signOut(); location.reload(); };
-  window.switchAuthTab = (tab) => {
-    document.getElementById('form-login').style.display = tab === 'login' ? 'block' : 'none';
-    document.getElementById('form-register').style.display = tab === 'register' ? 'block' : 'none';
-    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i===0 && tab==='login') || (i===1 && tab==='register')));
-  };
+let currentUser = null, currentProfile = null, currentDriver = null;
 
-  async function loadUserData(user) {
-    if(!user) return;
-    currentUser = user;
-    const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-    if(!profile) { setTimeout(() => loadUserData(user), 500); return; }
-    currentProfile = profile;
-    if(profile.role === 'driver') {
-      const { data: drv } = await supabase.from('drivers').select('*').eq('user_id', user.id).single();
-      currentDriver = drv;
-    }
-    document.getElementById('login-screen').classList.remove('active');
-    document.getElementById('app-screen').classList.add('active');
-    setupNav();
+// ============ UTILS ============
+function showMsg(id,txt,type){const el=document.getElementById(id);if(el){el.textContent=txt;el.className='msg '+type;}}
+function showToast(msg,type='ok'){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.className='toast show'+(type==='err'?' err':type==='info'?' info':'');setTimeout(()=>{t.className='toast';},3500);}
+function fmtTime(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+function fmtTimeShort(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+function fmtDur(min){if(min==null||min===undefined||isNaN(min))return'—';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m>0?' '+m+'min':''}`:`${m}min`;}
+function badgeHtml(s){const map={waiting:'En attente',arrived:'Au dock',loading:'Chargement',completed:'Terminé'};return`<span class="badge ${s}">${map[s]||s}</span>`;}
+function isDZL(str){return str&&/dzl/i.test(str.replace(/\s/g,''));}
+function dateCut(period){
+  const now=new Date(),from=new Date();
+  if(period==='today'){from.setHours(0,0,0,0);}
+  else if(period==='week'){from.setDate(now.getDate()-7);}
+  else if(period==='month'){from.setDate(now.getDate()-30);}
+  else return null;
+  return from.toISOString();
+}
+function minsBetween(a,b){if(!a||!b)return null;return Math.round((new Date(b)-new Date(a))/60000);}
+function timeToISO(dateStr, timeStr) {
+  if(!dateStr||!timeStr) return null;
+  return new Date(dateStr + 'T' + timeStr + ':00').toISOString();
+}
+
+// ============ QR ============
+function generateQRInto(id,text,size=200){
+  const c=document.getElementById(id);if(!c||!text)return;
+  c.innerHTML='';
+  try{new QRCode(c,{text,width:size,height:size,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});}
+  catch(e){c.innerHTML='<span style="color:var(--muted);font-size:.7rem">QR indisponible</span>';}
+}
+function getQRDataUrl(text,size=260){
+  return new Promise((res,rej)=>{
+    const tmp=document.createElement('div');
+    tmp.style.cssText='position:absolute;left:-9999px;top:-9999px';
+    document.body.appendChild(tmp);
+    try{
+      new QRCode(tmp,{text,width:size,height:size,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});
+      setTimeout(()=>{
+        const cv=tmp.querySelector('canvas'),img=tmp.querySelector('img');
+        if(cv){res(cv.toDataURL('image/png'));}
+        else if(img){
+          const c2=document.createElement('canvas');c2.width=size;c2.height=size;
+          const ctx=c2.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,size,size);
+          img.onload=()=>{ctx.drawImage(img,0,0,size,size);res(c2.toDataURL('image/png'));};
+          if(img.complete){ctx.drawImage(img,0,0,size,size);res(c2.toDataURL('image/png'));}
+        }else rej(new Error('no QR element'));
+        document.body.removeChild(tmp);
+      },120);
+    }catch(e){document.body.removeChild(tmp);rej(e);}
+  });
+}
+async function downloadQR(qrText,filename){
+  try{const url=await getQRDataUrl(qrText,400);const l=document.createElement('a');l.href=url;l.download=(filename||'qr-code')+'.png';l.click();showToast('QR téléchargé');}
+  catch(e){showToast('Erreur téléchargement QR','err');}
+}
+async function downloadQRById(){
+  const txt=document.getElementById('qr-view-id')?.textContent;
+  const title=document.getElementById('qr-view-title')?.textContent||'qr-code';
+  if(!txt)return;await downloadQR(txt,title.replace(/[^a-zA-Z0-9-_]/g,'-'));
+}
+
+// ============ AUTH ============
+async function doLogin(){
+  const email=document.getElementById('login-email').value.trim();
+  const pw=document.getElementById('login-pass').value;
+  if(!email||!pw){showMsg('login-msg','Remplissez email et mot de passe.','error');return;}
+  const{data,error}=await supabase.auth.signInWithPassword({email,password:pw});
+  if(error){showMsg('login-msg',error.message,'error');return;}
+  await loadUserData(data.user);
+}
+const quickLogin = async (email,pwd) => {document.getElementById('login-email').value=email;document.getElementById('login-pass').value=pwd;await doLogin();}
+
+async function doRegister(){
+  const name=document.getElementById('reg-name').value.trim();
+  const email=document.getElementById('reg-email').value.trim();
+  const phone=document.getElementById('reg-phone').value.trim();
+  const pw=document.getElementById('reg-pass').value;
+  const role=document.getElementById('reg-role').value;
+  const vehicle=document.getElementById('reg-vehicle').value;
+  if(!name||!email||!pw){showMsg('reg-msg','Remplissez tous les champs obligatoires.','error');return;}
+  if(pw.length<6){showMsg('reg-msg','Mot de passe trop court (min 6).','error');return;}
+  showMsg('reg-msg','Création du compte...','success');
+  const{data:sd,error:se}=await supabase.auth.signUp({email,password:pw,options:{data:{name,phone,role}}});
+  if(se){showMsg('reg-msg',se.message,'error');return;}
+  if(!sd.user){showMsg('reg-msg','Vérifiez votre email puis connectez-vous.','success');return;}
+  if(role==='driver'){
+    showMsg('reg-msg','Configuration du profil chauffeur...','success');
+    await new Promise(r=>setTimeout(r,1500));
+    const qrCode=`DRIVER-${sd.user.id}-${Date.now()}`;
+    const{error:de}=await supabase.from('drivers').insert([{user_id:sd.user.id,vehicle,qr_code:qrCode,status:'waiting'}]);
+    if(de){showMsg('reg-msg','Erreur profil chauffeur : '+de.message,'error');return;}
+  }
+  showMsg('reg-msg','Compte créé ! Connectez-vous.','success');
+  setTimeout(()=>switchAuthTab('login'),1500);
+}
+
+async function loadUserData(user){
+  if(!user)return;currentUser=user;
+  const{data:profile}=await supabase.from('profiles').select('*').eq('id',user.id).single();
+  if(!profile){await new Promise(r=>setTimeout(r,1000));return loadUserData(user);}
+  currentProfile=profile;
+  if(profile.role==='driver'){
+    const{data:drv}=await supabase.from('drivers').select('*').eq('user_id',user.id).single();
+    currentDriver=drv;
+  }
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('app-screen').classList.add('active');
+  setupNav();
+}
+
+async function doLogout(){
+  await supabase.auth.signOut();currentUser=null;currentProfile=null;currentDriver=null;
+  document.getElementById('app-screen').classList.remove('active');
+  document.getElementById('login-screen').classList.add('active');
+  showToast('Déconnecté');
+}
+
+function switchAuthTab(tab){
+  document.getElementById('form-login').style.display=tab==='login'?'block':'none';
+  document.getElementById('form-register').style.display=tab==='register'?'block':'none';
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
+}
+
+// ============ NAV ============
+const navConfig={
+  driver:[
+    {id:'driver-profile',label:'Mon profil & QR',icon:'<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>'},
+    {id:'driver-planning',label:'Mon planning',icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',notif:true},
+    {id:'driver-logs',label:'Mes passages',icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>'}
+  ],
+  operator:[
+    {id:'operator-scan',label:'Scanner Chauffeur',icon:'<path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/>'}
+  ],
+  admin:[
+    {id:'admin-dashboard',label:'Dashboard',icon:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'},
+    {id:'admin-logs',label:'Tous les logs',icon:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>'},
+    {id:'admin-drivers',label:'Chauffeurs',icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>'},
+    {id:'admin-docks',label:'Docks',icon:'<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'},
+    {id:'admin-planning',label:'Planning',icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'}
+  ]
+};
+
+function setupNav(){
+  if(!currentProfile)return;
+  const role=currentProfile.role;
+  document.getElementById('sidebar-role-label').textContent={driver:'Chauffeur',operator:'Opérateur',admin:'Administrateur'}[role];
+  document.getElementById('sidebar-username').textContent=currentProfile.name;
+  document.getElementById('sidebar-email-disp').textContent=currentUser.email;
+  document.getElementById('nav-items').innerHTML=navConfig[role].map(n=>`
+    <div class="nav-item" id="nav-${n.id}" onclick="goTo('${n.id}')">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${n.icon}</svg>
+      ${n.label}${n.notif?'<span class="notif-dot" id="notif-dot-'+n.id+'" style="display:none"></span>':''}
+    </div>`).join('');
+  goTo(navConfig[role][0].id);
+  if(role==='driver')checkDriverNotifs();
+}
+
+function goTo(pageId){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const pg=document.getElementById('page-'+pageId);
+  const ni=document.getElementById('nav-'+pageId);
+  if(pg)pg.classList.add('active');if(ni)ni.classList.add('active');
+  closeSidebar();
+  if(pageId==='driver-profile')renderDriverProfile();
+  if(pageId==='driver-logs')renderDriverLogs();
+  if(pageId==='driver-planning')renderDriverPlanning();
+  if(pageId==='operator-scan')renderOperatorScan();
+  if(pageId==='admin-dashboard')renderAdminDashboard();
+  if(pageId==='admin-logs')renderAdminLogs();
+  if(pageId==='admin-drivers')renderAdminDrivers();
+  if(pageId==='admin-docks')renderAdminDocks();
+  if(pageId==='admin-planning')renderAdminPlanning();
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('nav-backdrop').classList.toggle('open');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('nav-backdrop').classList.remove('open');}
+
+// ============ DRIVER PROFILE ============
+async function renderDriverProfile(){
+  if(!currentDriver){document.getElementById('driver-profile-header').innerHTML='<p style="color:var(--muted)">Profil chauffeur non trouvé.</p>';return;}
+  const u=currentProfile,d=currentDriver;
+  const ini=u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('driver-profile-header').innerHTML=`<div class="avatar">${ini}</div><div class="profile-info"><h2>${u.name}</h2><p>${u.email} · ${u.phone||'—'}</p></div>`;
+  document.getElementById('driver-info-grid').innerHTML=`
+    <div class="info-item"><label>Type véhicule</label><span>${d.vehicle}</span></div>
+    <div class="info-item"><label>Rôle</label><span>Chauffeur</span></div>
+    <div class="info-item"><label>ID</label><span style="font-size:.72rem">${d.id}</span></div>
+    <div class="info-item"><label>Code QR</label><span style="color:var(--muted);font-size:.68rem">${d.qr_code}</span></div>`;
+  document.getElementById('qr-card-name').textContent=u.name;
+  document.getElementById('qr-card-vehicle').textContent='🚛 '+d.vehicle;
+  document.getElementById('driver-qr-label').textContent=d.qr_code;
+  generateQRInto('driver-qr-container',d.qr_code,200);
+  const{data:logs}=await supabase.from('logs').select('*,docks(name)').eq('driver_id',d.id);
+  const active=logs?.find(l=>l.status!=='completed');
+  const box=document.getElementById('driver-status-display');
+  if(active){
+    if(active.status==='waiting'){box.innerHTML=`<div class="status-waiting-box">⏳ En attente au dock <strong>${active.docks?.name||'—'}</strong> depuis ${fmtTime(active.waiting_time)}<br>L'opérateur va scanner votre QR pour valider l'entrée.</div>`;}
+    else{box.innerHTML=`<div class="status-active-box">🟢 Entrée enregistrée au dock <strong>${active.docks?.name||'—'}</strong> — ${fmtTime(active.entry_time)}</div>`;}
+  }else{box.innerHTML=badgeHtml('waiting')+' — Aucune activité en cours';}
+}
+
+async function downloadDriverCard(){
+  if(!currentDriver)return;showToast('Génération de la carte...');
+  try{
+    const qrDataUrl=await getQRDataUrl(currentDriver.qr_code,260);
+    const fc=document.createElement('canvas');fc.width=420;fc.height=580;
+    const ctx=fc.getContext('2d');
+    const grad=ctx.createLinearGradient(0,0,420,580);
+    grad.addColorStop(0,'#0d1f14');grad.addColorStop(.5,'#0a1628');grad.addColorStop(1,'#0d1f14');
+    ctx.fillStyle=grad;ctx.beginPath();ctx.roundRect(0,0,420,580,20);ctx.fill();
+    ctx.strokeStyle='#00e5a0';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(1,1,418,578,20);ctx.stroke();
+    ctx.fillStyle='#e8eaf2';ctx.font='bold 26px sans-serif';ctx.fillText('Ware',30,58);
+    ctx.fillStyle='#00e5a0';ctx.fillText('Track',103,58);
+    ctx.fillStyle='#00e5a0';ctx.beginPath();ctx.roundRect(300,36,90,24,5);ctx.fill();
+    ctx.fillStyle='#000';ctx.font='bold 11px sans-serif';ctx.fillText('CHAUFFEUR',306,53);
+    ctx.strokeStyle='rgba(0,229,160,.2)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(30,75);ctx.lineTo(390,75);ctx.stroke();
+    ctx.fillStyle='#e8eaf2';ctx.font='bold 24px sans-serif';ctx.fillText(currentProfile?.name||'-',30,115);
+    ctx.fillStyle='#6b7491';ctx.font='15px sans-serif';ctx.fillText('Vehicule : '+(currentDriver?.vehicle||'-'),30,145);
+    const qi=new Image();await new Promise(r=>{qi.onload=r;qi.src=qrDataUrl;});
+    const qsz=260,qx=80,qy=175;
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(qx-10,qy-10,qsz+20,qsz+20,14);ctx.fill();
+    ctx.drawImage(qi,qx,qy,qsz,qsz);
+    ctx.fillStyle='#6b7491';ctx.font='9px monospace';ctx.textAlign='center';
+    const code=currentDriver.qr_code||'';ctx.fillText(code.length>52?code.slice(0,52)+'...':code,210,465);
+    ctx.strokeStyle='rgba(42,48,69,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(30,485);ctx.lineTo(390,485);ctx.stroke();
+    ctx.fillStyle='rgba(107,116,145,.8)';ctx.font='12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('Presentez cette carte a l operateur du dock',210,510);
+    ctx.font='10px sans-serif';ctx.fillText('WareTrack — Systeme de suivi des camions',210,535);
+    const lk=document.createElement('a');lk.download='carte-'+(currentDriver.vehicle||'chauffeur')+'.png';lk.href=fc.toDataURL('image/png');lk.click();
+    showToast('Carte téléchargée ✅');
+  }catch(e){console.error(e);showToast('Erreur génération carte','err');}
+}
+
+// ============ DRIVER : SCAN DOCK ============
+let driverQrScanner=null;
+function openDriverScanner(){
+  const re=document.getElementById('driver-qr-reader');
+  const me=document.getElementById('driver-scan-manual');
+  re.style.display='block';me.style.display='block';
+  if(driverQrScanner){try{driverQrScanner.stop();}catch(e){}driverQrScanner=null;}
+  re.innerHTML='';
+  try{
+    driverQrScanner=new Html5Qrcode('driver-qr-reader');
+    driverQrScanner.start({facingMode:'environment'},{fps:10,qrbox:200},async(txt)=>{
+      try{driverQrScanner.stop();}catch(e){}driverQrScanner=null;re.style.display='none';
+      await driverProcessDockQR(txt);
+    },()=>{});
+  }catch(e){re.innerHTML='<p style="color:var(--muted);font-size:.78rem;padding:1rem">Caméra indisponible — saisie manuelle.</p>';}
+}
+async function driverSubmitManual(){
+  const v=document.getElementById('driver-manual-qr').value.trim();
+  if(!v){showToast('Entrez un code QR','err');return;}
+  document.getElementById('driver-qr-reader').style.display='none';
+  document.getElementById('driver-scan-manual').style.display='none';
+  await driverProcessDockQR(v);
+}
+async function driverProcessDockQR(code){
+  if(!currentDriver){showToast('Profil chauffeur introuvable','err');return;}
+  const{data:existing}=await supabase.from('logs').select('id,status').eq('driver_id',currentDriver.id).neq('status','completed').limit(1);
+  if(existing&&existing.length){showToast('Vous êtes déjà enregistré (statut: '+existing[0].status+')','err');return;}
+  const{data:dock}=await supabase.from('docks').select('*').eq('qr_code',code).single();
+  if(!dock){showToast('QR dock non reconnu','err');return;}
+  const{error}=await supabase.from('logs').insert([{driver_id:currentDriver.id,dock_id:dock.id,status:'waiting',waiting_time:new Date().toISOString()}]);
+  if(error){showToast(error.message,'err');return;}
+  await supabase.from('drivers').update({status:'waiting'}).eq('id',currentDriver.id);
+  document.getElementById('driver-scan-dock-name').textContent='📍 '+dock.name;
+  document.getElementById('driver-scan-result').style.display='block';
+  showToast('✅ Présence signalée au '+dock.name+' — En attente opérateur','info');
+  renderDriverProfile();
+}
+function driverResetScan(){
+  if(driverQrScanner){try{driverQrScanner.stop();}catch(e){}driverQrScanner=null;}
+  const res=document.getElementById('driver-scan-result');if(res)res.style.display='none';
+  const re=document.getElementById('driver-qr-reader');if(re)re.style.display='none';
+  const me=document.getElementById('driver-scan-manual');if(me)me.style.display='none';
+  const m=document.getElementById('driver-manual-qr');if(m)m.value='';
+}
+
+// ============ DRIVER : LOGS ============
+async function renderDriverLogs(){
+  if(!currentDriver)return;
+  const{data:logs}=await supabase.from('logs').select('*,docks(name)').eq('driver_id',currentDriver.id).order('waiting_time',{ascending:false});
+  const tb=document.getElementById('driver-logs-tbody');
+  if(!logs||!logs.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun passage</td></tr>';return;}
+  tb.innerHTML=logs.map(l=>`<tr><td>${l.docks?.name||'—'}</td><td>${fmtTime(l.waiting_time)}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.loading_duration)}</td><td>${badgeHtml(l.status)}</td></tr>`).join('');
+}
+
+// ============ DRIVER : PLANNING ============
+async function renderDriverPlanning(){
+  if(!currentDriver)return;
+  const{data:plans}=await supabase.from('planning').select('*').eq('driver_id',currentDriver.id).order('date',{ascending:false});
+  const container=document.getElementById('driver-planning-list');
+  if(!plans||!plans.length){container.innerHTML='<div class="card"><p class="no-data">Aucune mission assignée.</p></div>';return;}
+  const unread=plans.filter(p=>!p.read_by_driver);
+  if(unread.length){
+    await supabase.from('planning').update({read_by_driver:true}).in('id',unread.map(p=>p.id));
+    const dot=document.getElementById('notif-dot-driver-planning');
+    if(dot)dot.style.display='none';
+  }
+  const today=new Date().toISOString().slice(0,10);
+  let html=`<div class="card" style="overflow-x:auto"><table style="min-width:500px;width:100%"><thead><tr><th>Date</th><th>Shift</th><th>Départ</th><th>Destination</th><th>Véhicule</th><th>Note</th></tr></thead><tbody>`;
+  for(const p of plans){
+    const isToday=p.date===today;
+    const fromDepot=p.from_depot==='USINE'?'USI':p.from_depot;
+    html+=`<tr style="${isToday?'background:rgba(0,102,255,.1);':''}">
+      <td>${p.date}${isToday?' <strong style="color:var(--accent)">(auj.)</strong>':''}</td>
+      <td><span class="badge ${p.shift==='Shift 1'?'shift1':'shift2'}">${p.shift==='Shift 1'?'SHIFT01':'SHIFT02'}</span></td>
+      <td>${fromDepot}</td>
+      <td>${p.to_depot||'—'}${isDZL(p.to_depot)?' <span class="badge dzl">DZL</span>':''}</td>
+      <td>${currentDriver.vehicle}</td>
+      <td>${p.note||'—'}</td></tr>`;
+  }
+  html+=`</tbody></table></div>`;
+  container.innerHTML=html;
+}
+
+async function checkDriverNotifs(){
+  if(!currentDriver)return;
+  const{data}=await supabase.from('planning').select('id').eq('driver_id',currentDriver.id).eq('read_by_driver',false);
+  const dot=document.getElementById('notif-dot-driver-planning');
+  if(dot)dot.style.display=(data&&data.length>0)?'block':'none';
+}
+
+// ============ OPERATOR SCAN ============
+let opQrScanner=null;
+
+async function renderOperatorScan(){
+  await renderOperatorActive();
+  await renderDockQRs();
+}
+
+function openOperatorScanner(){
+  document.getElementById('scanner-modal-title').textContent='Scanner QR Chauffeur';
+  document.getElementById('manual-qr-input').value='';
+  document.getElementById('scanner-modal').classList.add('open');
+  startCamera();
+}
+
+function startCamera(){
+  if(opQrScanner){try{opQrScanner.stop();}catch(e){}opQrScanner=null;}
+  const el=document.getElementById('qr-reader');el.innerHTML='';
+  try{
+    opQrScanner=new Html5Qrcode('qr-reader');
+    opQrScanner.start({facingMode:'environment'},{fps:10,qrbox:200},async(txt)=>{
+      stopCamera();closeScanner();await processOperatorScan(txt);
+    },()=>{});
+  }catch(e){el.innerHTML='<p style="color:var(--muted);font-size:.78rem;padding:1rem">Caméra indisponible — saisie manuelle.</p>';}
+}
+
+async function submitManualQR(){
+  const v=document.getElementById('manual-qr-input').value.trim();
+  if(!v){showToast('Entrez un code QR','err');return;}
+  closeScanner();await processOperatorScan(v);
+}
+
+function openManualOpModal(){document.getElementById('manual-op-modal').classList.add('open');document.getElementById('manual-op-input').value='';}
+function closeManualOpModal(){document.getElementById('manual-op-modal').classList.remove('open');}
+async function submitManualOp(){
+  const v=document.getElementById('manual-op-input').value.trim();
+  if(!v){showToast('Entrez un code QR','err');return;}
+  closeManualOpModal();await processOperatorScan(v);
+}
+
+async function processOperatorScan(code){
+  const{data:driver}=await supabase.from('drivers').select('*,profiles!drivers_user_id_fkey(name,phone)').eq('qr_code',code).single();
+  if(!driver){showToast('QR chauffeur non reconnu','err');return;}
+  const driverName=driver.profiles?.name||'Chauffeur';
+  const{data:activeLog}=await supabase.from('logs').select('*,docks(name)').eq('driver_id',driver.id).neq('status','completed').order('waiting_time',{ascending:false}).limit(1).single();
+  const box=document.getElementById('op-scan-result');
+  box.style.display='block';
+  if(!activeLog){
+    document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--warn)">⚠️ <strong>${driverName}</strong> n'est pas enregistré à un dock. Le chauffeur doit d'abord scanner le QR du dock.</span>`;
+    showToast('Chauffeur non présent à un dock','err');return;
+  }
+  if(activeLog.status==='waiting'){
+    const now=new Date().toISOString();
+    const waitMin=activeLog.waiting_time?Math.round((new Date(now)-new Date(activeLog.waiting_time))/60000):0;
+    const{error}=await supabase.from('logs').update({status:'arrived',entry_time:now,wait_duration:waitMin}).eq('id',activeLog.id);
+    if(error){showToast(error.message,'err');return;}
+    await supabase.from('drivers').update({status:'arrived'}).eq('id',driver.id);
+    document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--accent)">✅ <strong>ENTRÉE</strong> enregistrée — ${driverName} · ${driver.vehicle}<br>Dock : ${activeLog.docks?.name||'—'} · Attente : ${fmtDur(waitMin)}</span>`;
+    showToast('✅ Entrée enregistrée — '+driverName,'ok');
+    await renderOperatorActive();
+  } else if(activeLog.status==='arrived'){
+    const now=new Date().toISOString();
+    const loadMin=activeLog.entry_time?Math.round((new Date(now)-new Date(activeLog.entry_time))/60000):0;
+    const{error}=await supabase.from('logs').update({status:'completed',exit_time:now,loading_duration:loadMin}).eq('id',activeLog.id);
+    if(error){showToast(error.message,'err');return;}
+    await supabase.from('drivers').update({status:'waiting'}).eq('id',driver.id);
+    document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--accent2)">🏁 <strong>SORTIE</strong> — Opération terminée · ${driverName}<br>Dock : ${activeLog.docks?.name||'—'} · Durée chargement : ${fmtDur(loadMin)}</span>`;
+    showToast('🏁 Sortie enregistrée — '+driverName,'info');
+    await renderOperatorActive();
+  }
+}
+
+async function renderOperatorActive(){
+  const{data:logs}=await supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)').neq('status','completed');
+  const tb=document.getElementById('operator-active-tbody');
+  if(!logs||!logs.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun camion actif</td></tr>';return;}
+  tb.innerHTML=logs.map(l=>`<tr><td>${l.drivers?.profiles?.name||'—'}</td><td>${l.drivers?.vehicle||'—'}</td><td>${l.docks?.name||'—'}</td><td>${fmtTime(l.waiting_time)}</td><td>${fmtTime(l.entry_time)}</td><td>${badgeHtml(l.status)}</td></tr>`).join('');
+}
+
+async function renderDockQRs(){
+  const{data:docks}=await supabase.from('docks').select('*');
+  const c=document.getElementById('dock-qr-list');c.innerHTML='';
+  if(!docks)return;
+  for(const dk of docks){
+    const w=document.createElement('div');
+    w.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;min-width:160px;';
+    const id='dqr-'+dk.id;
+    const qd=document.createElement('div');qd.id=id;qd.className='qr-white-bg';qd.style.cssText='width:130px;height:130px;margin:0 auto .5rem';
+    const lbl=document.createElement('div');lbl.style.cssText='font-size:.78rem;font-weight:600;margin-bottom:.5rem';lbl.textContent=dk.name;
+    const sub=document.createElement('div');sub.style.cssText='font-size:.6rem;color:var(--muted)';sub.textContent=dk.qr_code;
+    w.appendChild(lbl);w.appendChild(qd);w.appendChild(sub);c.appendChild(w);
+    generateQRInto(id,dk.qr_code,130);
+  }
+}
+
+function stopCamera(){if(opQrScanner){try{opQrScanner.stop();}catch(e){}opQrScanner=null;}}
+function closeScanner(){stopCamera();document.getElementById('scanner-modal').classList.remove('open');}
+
+// ============ ADMIN DASHBOARD (REDESIGNED) ============
+async function renderAdminDashboard(){
+  const period=document.getElementById('dash-period')?.value||'month';
+  const fromDate=document.getElementById('dash-from')?.value;
+  const toDate=document.getElementById('dash-to')?.value;
+
+  let query=supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)');
+  if(fromDate&&toDate){
+    query=query.gte('waiting_time',fromDate+'T00:00:00').lte('waiting_time',toDate+'T23:59:59');
+  } else {
+    const cut=dateCut(period);
+    if(cut)query=query.gte('waiting_time',cut);
+  }
+  const[{data:logs},{data:drivers},{data:docks},{data:plans}]=await Promise.all([
+    query,
+    supabase.from('drivers').select('id,vehicle'),
+    supabase.from('docks').select('id,name'),
+    supabase.from('planning').select('from_depot,to_depot')
+  ]);
+
+  const allLogs=logs||[];
+  const completed=allLogs.filter(l=>l.status==='completed');
+  const active=allLogs.filter(l=>l.status!=='completed');
+
+  const waitTimes=completed.filter(l=>l.wait_duration!=null).map(l=>l.wait_duration);
+  const avgWait=waitTimes.length?Math.round(waitTimes.reduce((a,b)=>a+b,0)/waitTimes.length):0;
+  const loadTimes=completed.filter(l=>l.loading_duration!=null).map(l=>l.loading_duration);
+  const avgLoad=loadTimes.length?Math.round(loadTimes.reduce((a,b)=>a+b,0)/loadTimes.length):0;
+  const allPlans=plans||[];
+  const bardage=allPlans.filter(p=>p.from_depot==='USINE'&&isDZL(p.to_depot)).length;
+
+  // KPI Cards
+  document.getElementById('admin-kpi-hero').innerHTML=`
+    <div class="kpi-card green">
+      <span class="kpi-icon">🚛</span>
+      <div class="kpi-val">${active.length}</div>
+      <div class="kpi-label">Camions actifs</div>
+      <div class="kpi-trend">en ce moment</div>
+    </div>
+    <div class="kpi-card blue">
+      <span class="kpi-icon">✅</span>
+      <div class="kpi-val">${completed.length}</div>
+      <div class="kpi-label">Passages terminés</div>
+      <div class="kpi-trend">période sélectionnée</div>
+    </div>
+    <div class="kpi-card orange">
+      <span class="kpi-icon">⏳</span>
+      <div class="kpi-val">${fmtDur(avgWait)||'—'}</div>
+      <div class="kpi-label">T. attente moyen</div>
+      <div class="kpi-trend">${waitTimes.length} mesures</div>
+    </div>
+    <div class="kpi-card teal">
+      <span class="kpi-icon">⚙️</span>
+      <div class="kpi-val">${fmtDur(avgLoad)||'—'}</div>
+      <div class="kpi-label">T. chargement moyen</div>
+      <div class="kpi-trend">${loadTimes.length} mesures</div>
+    </div>
+    <div class="kpi-card red">
+      <span class="kpi-icon">🏭</span>
+      <div class="kpi-val">${bardage}</div>
+      <div class="kpi-label">Bardages Usine→DZL</div>
+      <div class="kpi-trend">planning total</div>
+    </div>
+    <div class="kpi-card purple">
+      <span class="kpi-icon">📋</span>
+      <div class="kpi-val">${allLogs.length}</div>
+      <div class="kpi-label">Total passages</div>
+      <div class="kpi-trend">${drivers?.length||0} chauffeurs · ${docks?.length||0} docks</div>
+    </div>
+  `;
+
+  // All operations table (not just active)
+  const tb=document.getElementById('admin-all-ops-tbody');
+  if(!allLogs.length){tb.innerHTML='<tr><td colspan="7" class="no-data">Aucune opération sur cette période</td></tr>';}
+  else{
+    tb.innerHTML=allLogs.slice(0,50).map(l=>{
+      const dur=l.entry_time&&l.status!=='completed'?Math.round((new Date()-new Date(l.entry_time))/60000):l.loading_duration;
+      return`<tr><td>${l.drivers?.profiles?.name||'—'}</td><td>${l.drivers?.vehicle||'—'}</td><td>${l.docks?.name||'—'}</td><td>${fmtDur(l.wait_duration)}</td><td>${fmtTimeShort(l.entry_time)}</td><td>${fmtDur(dur)}</td><td>${badgeHtml(l.status)}</td></tr>`;
+    }).join('');
+    if(allLogs.length>50) tb.innerHTML+=`<tr><td colspan="7" style="text-align:center;color:var(--muted);font-size:.72rem;padding:.5rem">… et ${allLogs.length-50} autres. <a href="#" onclick="goTo('admin-logs')" style="color:var(--accent)">Voir tout</a></td></tr>`;
   }
 
-  // Navigation
-  const navConfig = {
-    driver: [{id:'driver-profile',label:'Mon profil & QR',icon:'<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>'},{id:'driver-planning',label:'Mon planning',icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'},{id:'driver-logs',label:'Mes passages',icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>'}],
-    operator: [{id:'operator-scan',label:'Scanner Chauffeur',icon:'<path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/>'}],
-    admin: [{id:'admin-dashboard',label:'Dashboard',icon:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'},{id:'admin-logs',label:'Tous les logs',icon:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>'},{id:'admin-drivers',label:'Chauffeurs',icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>'},{id:'admin-docks',label:'Docks',icon:'<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'},{id:'admin-planning',label:'Planning',icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'}]
-  };
-  function setupNav() {
-    if(!currentProfile) return;
-    const role = currentProfile.role;
-    document.getElementById('sidebar-role-label').innerHTML = role === 'driver' ? '🧀 CHAUFFEUR' : (role === 'operator' ? '⚙️ OPÉRATEUR' : '📊 ADMIN');
-    document.getElementById('sidebar-username').innerText = currentProfile.name;
-    document.getElementById('sidebar-email-disp').innerText = currentUser.email;
-    document.getElementById('nav-items').innerHTML = navConfig[role].map(n => `<div class="nav-item" id="nav-${n.id}" onclick="window.goTo('${n.id}')"><svg width="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${n.icon}</svg> ${n.label}</div>`).join('');
-    window.goTo(navConfig[role][0].id);
+  // Dock activity
+  const dockMap={};
+  allLogs.forEach(l=>{
+    const name=l.docks?.name||'—';
+    dockMap[name]=(dockMap[name]||0)+1;
+  });
+  const maxDock=Math.max(...Object.values(dockMap),1);
+  const dockHtml=Object.entries(dockMap).sort((a,b)=>b[1]-a[1]).map(([name,count])=>`
+    <div class="dock-pill ${count>0?'active':''}">
+      <div class="dock-pill-name">${name}</div>
+      <div class="dock-pill-bar"><div class="dock-pill-fill" style="width:${Math.round(count/maxDock*100)}%"></div></div>
+      <div class="dock-pill-count">${count} passages</div>
+    </div>`).join('');
+  document.getElementById('admin-dock-activity').innerHTML=dockHtml||'<div style="color:var(--muted);font-size:.75rem">Aucune activité</div>';
+
+  // Vehicle breakdown
+  const vehMap={};
+  allLogs.forEach(l=>{const v=l.drivers?.vehicle||'Autre';vehMap[v]=(vehMap[v]||0)+1;});
+  const vehColors={'CAM-SOLO':'#00e5a0','REMQ':'#0066ff','CANTE':'#ffaa00','DUCATO':'#ff4455'};
+  const vehHtml=Object.entries(vehMap).map(([v,c])=>`
+    <div class="veh-item">
+      <div class="veh-item-val" style="color:${vehColors[v]||'#a07aff'}">${c}</div>
+      <div class="veh-item-lbl">${v}</div>
+    </div>`).join('');
+  document.getElementById('admin-veh-breakdown').innerHTML=vehHtml||'<div style="color:var(--muted);font-size:.75rem">—</div>';
+}
+
+// ============ ADMIN LOGS ============
+async function renderAdminLogs(){
+  const search=(document.getElementById('filter-search')?.value||'').toLowerCase();
+  const status=document.getElementById('filter-status')?.value||'';
+  const date=document.getElementById('filter-date')?.value||'';
+  const{data:logs}=await supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)').order('waiting_time',{ascending:false});
+  let f=logs||[];
+  if(status)f=f.filter(l=>l.status===status);
+  if(date)f=f.filter(l=>l.waiting_time?.startsWith(date));
+  if(search)f=f.filter(l=>(l.drivers?.profiles?.name||'').toLowerCase().includes(search)||(l.drivers?.vehicle||'').toLowerCase().includes(search)||(l.docks?.name||'').toLowerCase().includes(search));
+  const tb=document.getElementById('admin-logs-tbody');
+  if(!f.length){tb.innerHTML='<tr><td colspan="9" class="no-data">Aucun résultat</td></tr>';return;}
+  tb.innerHTML=f.map(l=>`<tr>
+    <td>${l.drivers?.profiles?.name||'—'}</td>
+    <td>${l.drivers?.vehicle||'—'}</td>
+    <td>${l.docks?.name||'—'}</td>
+    <td>${fmtTime(l.waiting_time)}</td>
+    <td>${fmtTime(l.entry_time)}</td>
+    <td>${fmtTime(l.exit_time)}</td>
+    <td>${fmtDur(l.wait_duration)}</td>
+    <td>${fmtDur(l.loading_duration)}</td>
+    <td>${badgeHtml(l.status)}</td></tr>`).join('');
+}
+
+async function exportCSV(){
+  const{data:logs}=await supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)');
+  const rows=[['Chauffeur','Véhicule','Dock','Arrivée dock','Entrée','Sortie','T.Attente(min)','T.Chargement(min)','Statut']];
+  logs?.forEach(l=>rows.push([l.drivers?.profiles?.name||'',l.drivers?.vehicle||'',l.docks?.name||'',fmtTime(l.waiting_time),fmtTime(l.entry_time),fmtTime(l.exit_time),l.wait_duration||'',l.loading_duration||'',l.status]));
+  const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const lk=document.createElement('a');lk.href=URL.createObjectURL(blob);lk.download='warehouse-logs.csv';lk.click();
+  showToast('Export CSV téléchargé');
+}
+
+// ============ ADMIN CHAUFFEURS ============
+async function renderAdminDrivers(){
+  const{data:drivers}=await supabase.from('drivers').select('*,profiles!drivers_user_id_fkey(name,email,phone)');
+  const tb=document.getElementById('admin-drivers-tbody');
+  if(!drivers||!drivers.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun chauffeur</td></tr>';return;}
+  tb.innerHTML=drivers.map(d=>`<tr>
+    <td>${d.profiles?.name||'—'}</td><td>${d.profiles?.email||'—'}</td>
+    <td>${d.profiles?.phone||'—'}</td><td>${d.vehicle}</td>
+    <td>${badgeHtml(d.status)}</td>
+    <td><button class="btn sm secondary" onclick="showQRView('${d.qr_code}','QR — ${(d.profiles?.name||d.vehicle).replace(/'/g,'')}')">Voir QR</button></td></tr>`).join('');
+}
+
+// ============ ADMIN DOCKS ============
+async function renderAdminDocks(){
+  const{data:docks}=await supabase.from('docks').select('*');
+  const grid=document.getElementById('docks-grid');grid.innerHTML='';
+  if(!docks)return;
+  for(const dk of docks){
+    const w=document.createElement('div');w.className='card';w.style.cssText='min-width:200px;max-width:240px;text-align:center';
+    const id='adock-'+dk.id;
+    const qd=document.createElement('div');qd.id=id;qd.className='qr-white-bg';qd.style.cssText='width:150px;height:150px;margin:0 auto .5rem';
+    const nm=document.createElement('div');nm.style.cssText='font-size:.8rem;font-weight:500;margin-bottom:.5rem';nm.textContent=dk.name;
+    const sub=document.createElement('div');sub.className='qr-id';sub.textContent=dk.qr_code;
+    const dlb=document.createElement('button');dlb.className='btn sm';dlb.textContent='Télécharger';dlb.style.marginTop='.75rem';
+    dlb.onclick=()=>downloadQR(dk.qr_code,dk.name);
+    w.appendChild(nm);w.appendChild(qd);w.appendChild(sub);w.appendChild(dlb);
+    grid.appendChild(w);generateQRInto(id,dk.qr_code,150);
   }
-  window.goTo = (pageId) => {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const pg = document.getElementById('page-'+pageId);
-    if(pg) pg.classList.add('active');
-    window.closeSidebar();
-    // pour simplifier, on recharge les contenus essentiels (on laisse le backend original intact)
-    if(pageId === 'driver-profile') renderDriverProfile();
-    if(pageId === 'admin-dashboard') renderAdminDashboard();
-    if(pageId === 'admin-planning') renderAdminPlanning();
-    if(pageId === 'operator-scan') renderOperatorScan();
-    if(pageId === 'admin-logs') renderAdminLogs();
-    if(pageId === 'admin-drivers') renderAdminDrivers();
-    if(pageId === 'admin-docks') renderAdminDocks();
-  };
-  window.toggleSidebar = () => { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('nav-backdrop').classList.toggle('open'); };
-  window.closeSidebar = () => { document.getElementById('sidebar').classList.remove('open'); document.getElementById('nav-backdrop').classList.remove('open'); };
+}
+async function addDock(){
+  const name=document.getElementById('new-dock-name').value.trim();
+  if(!name){showToast('Entrez un nom de dock','err');return;}
+  const qrCode=`DOCK:${Date.now()}:${name.replace(/\s+/g,'_')}`;
+  const{error}=await supabase.from('docks').insert([{name,qr_code:qrCode}]);
+  if(error){showToast(error.message,'err');return;}
+  document.getElementById('new-dock-name').value='';showToast('Dock ajouté');renderAdminDocks();
+}
 
-  // Fonctions de rendu minimales (nécessaires pour éviter les erreurs, mais le backend original fonctionne)
-  async function renderDriverProfile() { const div = document.getElementById('page-driver-profile'); if(div && currentDriver) div.innerHTML = `<div class="card"><div class="card-title">Mon profil</div><p>Bienvenue ${currentProfile?.name} - Véhicule ${currentDriver?.vehicle}</p><div id="qrcode"></div></div>`; if(currentDriver) new QRCode(document.getElementById('qrcode'), currentDriver.qr_code); }
-  async function renderAdminDashboard() { const div = document.getElementById('page-admin-dashboard'); div.innerHTML = `<div class="page-title">Dashboard</div><div class="dash-hero"><div class="kpi-card"><div class="kpi-val">🍷</div><div class="kpi-label">Bienvenue Admin</div></div></div>`; }
-  async function renderAdminPlanning() { document.getElementById('page-admin-planning').innerHTML = `<div class="card"><div class="card-title">Planning</div><p>Module planning actif</p></div>`; }
-  async function renderOperatorScan() { document.getElementById('page-operator-scan').innerHTML = `<div class="card">Scanner opérateur prêt</div>`; }
-  async function renderAdminLogs() { document.getElementById('page-admin-logs').innerHTML = `<div class="card">Logs complets</div>`; }
-  async function renderAdminDrivers() { document.getElementById('page-admin-drivers').innerHTML = `<div class="card">Liste des chauffeurs</div>`; }
-  async function renderAdminDocks() { document.getElementById('page-admin-docks').innerHTML = `<div class="card">Gestion des docks</div>`; }
+// ============ ADMIN PLANNING (EXCEL-STYLE EDITABLE) ============
+let planningDriversCache = [];
 
-  // Initialisation session
-  (async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if(session) await loadUserData(session.user);
-  })();
+async function renderAdminPlanning(){
+  // Load drivers for the form
+  if(planningDriversCache.length === 0){
+    const{data:drivers}=await supabase.from('drivers').select('id,vehicle,profiles!drivers_user_id_fkey(name)');
+    planningDriversCache = drivers||[];
+    const sel=document.getElementById('plan-driver');
+    if(sel&&sel.options.length<=1){
+      planningDriversCache.forEach(d=>{
+        const o=document.createElement('option');
+        o.value=d.id;
+        o.textContent=(d.profiles?.name||'?')+' — '+d.vehicle;
+        o.dataset.vehicle=d.vehicle;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('change',()=>{
+        const opt=sel.options[sel.selectedIndex];
+        document.getElementById('plan-vehicle').value=opt.dataset.vehicle||'';
+      });
+    }
+  }
+
+  const dateF=document.getElementById('plan-filter-date')?.value||'';
+  const shiftF=document.getElementById('plan-filter-shift')?.value||'';
+  const search=(document.getElementById('plan-filter-search')?.value||'').toLowerCase();
+
+  let q=supabase.from('planning').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name))').order('date',{ascending:false});
+  if(dateF) q=q.eq('date',dateF);
+  if(shiftF) q=q.eq('shift',shiftF);
+  const{data:plans}=await q;
+
+  let filtered=plans||[];
+  if(search) filtered=filtered.filter(p=>
+    (p.drivers?.profiles?.name||'').toLowerCase().includes(search)||
+    (p.to_depot||'').toLowerCase().includes(search)
+  );
+
+  // Fetch logs for these plans
+  let logsMap=new Map();
+  if(filtered.length){
+    const driverIds=[...new Set(filtered.map(p=>p.driver_id))];
+    const dates=[...new Set(filtered.map(p=>p.date))];
+    const{data:logs}=await supabase.from('logs').select('*').in('driver_id',driverIds);
+    if(logs){
+      logs.forEach(log=>{
+        const logDate=log.waiting_time?.slice(0,10)||log.entry_time?.slice(0,10);
+        if(logDate&&dates.includes(logDate)){
+          const key=`${log.driver_id}_${logDate}`;
+          if(!logsMap.has(key)) logsMap.set(key,log);
+        }
+      });
+    }
+  }
+
+  // Stats pills
+  const total=filtered.length;
+  const withLog=filtered.filter(p=>logsMap.has(`${p.driver_id}_${p.date}`)).length;
+  const shift1=filtered.filter(p=>p.shift==='Shift 1').length;
+  const shift2=filtered.filter(p=>p.shift==='Shift 2').length;
+  document.getElementById('planning-stats-pills').innerHTML=`
+    <div class="stat-pill"><strong>${total}</strong> missions</div>
+    <div class="stat-pill"><strong style="color:var(--accent)">${withLog}</strong> réalisées</div>
+    <div class="stat-pill"><strong style="color:#00e5a0">${shift1}</strong> Shift 1</div>
+    <div class="stat-pill"><strong style="color:#ffaa00">${shift2}</strong> Shift 2</div>
+    <div class="stat-pill"><strong style="color:var(--muted)">${total-withLog}</strong> planifiées</div>
+  `;
+
+  if(!filtered.length){
+    document.getElementById('admin-planning-list').innerHTML='<div class="card"><p class="no-data">Aucune mission trouvée.</p></div>';
+    return;
+  }
+
+  // Build Excel-like table with inline editing
+  let rows='';
+  filtered.forEach((p,idx)=>{
+    const driverName=p.drivers?.profiles?.name||'—';
+    const vehicle=p.drivers?.vehicle||p.vehicle||'—';
+    const fromDepot=p.from_depot==='USINE'?'USI':p.from_depot;
+    const toDepot=p.to_depot||'—';
+    const key=`${p.driver_id}_${p.date}`;
+    const log=logsMap.get(key);
+
+    const arrivalVal=log?.waiting_time?new Date(log.waiting_time).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+    const debVal=log?.entry_time?new Date(log.entry_time).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+    const finVal=log?.exit_time?new Date(log.exit_time).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+    const waitDur=log?fmtDur(log.wait_duration):'—';
+    const loadDur=log?fmtDur(log.loading_duration):'—';
+    const done=log?.status==='completed';
+
+    const shiftBadge=p.shift==='Shift 1'
+      ?'<span class="badge shift1">SHIFT01</span>'
+      :'<span class="badge shift2">SHIFT02</span>';
+
+    const dzlBadge=isDZL(p.to_depot)?'<span class="badge dzl" style="margin-left:.3rem">DZL</span>':'';
+
+    rows+=`<tr data-id="${p.id}" data-driver="${p.driver_id}" data-date="${p.date}">
+      <td class="row-num">${idx+1}</td>
+      <td>
+        <input class="cell-edit" type="date" value="${p.date}"
+          onchange="updatePlanField('${p.id}','date',this.value)">
+      </td>
+      <td>
+        <select class="cell-edit" onchange="updatePlanField('${p.id}','shift',this.value)">
+          <option value="Shift 1" ${p.shift==='Shift 1'?'selected':''}>SHIFT01</option>
+          <option value="Shift 2" ${p.shift==='Shift 2'?'selected':''}>SHIFT02</option>
+        </select>
+      </td>
+      <td>
+        <select class="cell-edit" onchange="updatePlanField('${p.id}','from_depot',this.value)">
+          <option value="USINE" ${p.from_depot==='USINE'?'selected':''}>USI</option>
+          <option value="DZL" ${p.from_depot==='DZL'?'selected':''}>DZL</option>
+        </select>
+      </td>
+      <td>
+        <input class="cell-edit" type="text" value="${p.to_depot||''}" style="min-width:90px"
+          onchange="updatePlanField('${p.id}','to_depot',this.value)">
+        ${dzlBadge}
+      </td>
+      <td style="font-size:.72rem">${vehicle}</td>
+      <td>
+        <select class="cell-edit" style="min-width:100px" onchange="updatePlanField('${p.id}','driver_id',this.value)">
+          ${planningDriversCache.map(d=>`<option value="${d.id}" ${d.id===p.driver_id?'selected':''}>${d.profiles?.name||'?'}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input class="cell-edit" type="text" value="${(p.note||'').replace(/"/g,'&quot;')}" style="min-width:80px"
+          onchange="updatePlanField('${p.id}','note',this.value)">
+      </td>
+      <td>
+        <input class="time-input" type="time" value="${arrivalVal}"
+          onchange="updateLogTimeField('${p.driver_id}','${p.date}','waiting_time',this.value,'${p.date}')">
+      </td>
+      <td>
+        <input class="time-input" type="time" value="${debVal}"
+          onchange="updateLogTimeField('${p.driver_id}','${p.date}','entry_time',this.value,'${p.date}')">
+      </td>
+      <td>
+        <input class="time-input" type="time" value="${finVal}"
+          onchange="updateLogTimeField('${p.driver_id}','${p.date}','exit_time',this.value,'${p.date}')">
+      </td>
+      <td class="dur-cell">${waitDur}</td>
+      <td class="dur-cell">${loadDur}</td>
+      <td>
+        <div class="check-cell">
+          <input type="checkbox" ${done?'checked':''}
+            onchange="togglePlanDone('${p.driver_id}','${p.date}',this.checked)">
+        </div>
+      </td>
+      <td>
+        <button class="btn sm danger" onclick="deletePlanning('${p.id}')" style="padding:.2rem .45rem;font-size:.65rem">✕</button>
+      </td>
+    </tr>`;
+  });
+
+  document.getElementById('admin-planning-list').innerHTML=`
+    <div class="planning-excel-wrap">
+      <table class="planning-excel">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date ▼</th>
+            <th>Shift</th>
+            <th>Du Dépôt</th>
+            <th>Au Dépôt</th>
+            <th>Veh.</th>
+            <th>CHFR.</th>
+            <th>Note</th>
+            <th>Hr. D'ARRIVER Camion</th>
+            <th>HEURE DEB</th>
+            <th>HEURE FIN</th>
+            <th>TEMPS Charge</th>
+            <th>TEMPS D'attente</th>
+            <th>Oui/Non</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// Update a planning field inline
+async function updatePlanField(id, field, value){
+  const{error}=await supabase.from('planning').update({[field]:value}).eq('id',id);
+  if(error){showToast('Erreur: '+error.message,'err');return;}
+  showToast('✓ Modifié','ok');
+  // Refresh table after driver change to update vehicle column
+  if(field==='driver_id') renderAdminPlanning();
+}
+
+// Update a log time field from planning table
+async function updateLogTimeField(driverId, planDate, field, timeVal, date){
+  if(!timeVal) return;
+  const fullISO = new Date(date + 'T' + timeVal + ':00').toISOString();
+  // Find existing log
+  const{data:logs}=await supabase.from('logs').select('id,entry_time,waiting_time,exit_time,status')
+    .eq('driver_id',driverId)
+    .gte('waiting_time',date+'T00:00:00')
+    .lte('waiting_time',date+'T23:59:59')
+    .limit(1);
+
+  if(logs&&logs.length){
+    const log=logs[0];
+    const update={[field]:fullISO};
+    // Recalculate durations
+    if(field==='entry_time'&&log.waiting_time){
+      update.wait_duration=Math.round((new Date(fullISO)-new Date(log.waiting_time))/60000);
+    }
+    if(field==='exit_time'&&log.entry_time){
+      const entryT=field==='entry_time'?fullISO:log.entry_time;
+      update.loading_duration=Math.round((new Date(fullISO)-new Date(entryT))/60000);
+    }
+    const{error}=await supabase.from('logs').update(update).eq('id',log.id);
+    if(error){showToast('Erreur log: '+error.message,'err');return;}
+    showToast('✓ Heure mise à jour');
+    // Refresh to recalculate displayed durations
+    setTimeout(()=>renderAdminPlanning(),500);
+  } else {
+    showToast('Aucun log trouvé pour ce chauffeur à cette date','err');
+  }
+}
+
+// Toggle the "Oui/Non" checkbox (marks log as completed or reverts)
+async function togglePlanDone(driverId, date, checked){
+  const{data:logs}=await supabase.from('logs').select('id')
+    .eq('driver_id',driverId)
+    .gte('waiting_time',date+'T00:00:00')
+    .lte('waiting_time',date+'T23:59:59')
+    .limit(1);
+  if(logs&&logs.length){
+    const newStatus=checked?'completed':'arrived';
+    const update={status:newStatus};
+    if(checked) update.exit_time=new Date().toISOString();
+    await supabase.from('logs').update(update).eq('id',logs[0].id);
+    showToast(checked?'✅ Marqué terminé':'↩️ Remis en cours');
+  } else {
+    showToast('Aucun log actif pour cette mission','err');
+  }
+}
+
+function clearPlanFilters(){
+  document.getElementById('plan-filter-date').value='';
+  document.getElementById('plan-filter-shift').value='';
+  document.getElementById('plan-filter-search').value='';
+  renderAdminPlanning();
+}
+
+async function createPlanning(){
+  const date=document.getElementById('plan-date').value;
+  const shift=document.getElementById('plan-shift').value;
+  const from=document.getElementById('plan-from').value;
+  const to=document.getElementById('plan-to').value.trim();
+  const driverId=document.getElementById('plan-driver').value;
+  const vehicle=document.getElementById('plan-vehicle').value;
+  const note=document.getElementById('plan-note').value.trim();
+  if(!date||!to||!driverId){showToast('Remplissez date, destination et chauffeur','err');return;}
+  const{error}=await supabase.from('planning').insert([{date,shift,from_depot:from,to_depot:to,driver_id:driverId,vehicle,note,read_by_driver:false}]);
+  if(error){showToast(error.message,'err');return;}
+  showToast('Mission créée');
+  document.getElementById('plan-date').value='';
+  document.getElementById('plan-to').value='';
+  document.getElementById('plan-note').value='';
+  document.getElementById('plan-driver').value='';
+  document.getElementById('plan-vehicle').value='';
+  renderAdminPlanning();
+}
+
+async function deletePlanning(id){
+  if(!confirm('Supprimer cette mission ?'))return;
+  await supabase.from('planning').delete().eq('id',id);
+  showToast('Mission supprimée');renderAdminPlanning();
+}
+
+// ============ QR VIEW ============
+function showQRView(qrCode,title){
+  document.getElementById('qr-view-title').textContent=title;
+  document.getElementById('qr-view-id').textContent=qrCode;
+  document.getElementById('qr-view-modal').classList.add('open');
+  generateQRInto('qr-view-container',qrCode,220);
+}
+function closeQRView(){document.getElementById('qr-view-modal').classList.remove('open');}
+
+// ============ EVENTS ============
+document.getElementById('scanner-modal').addEventListener('click',function(e){if(e.target===this)closeScanner();});
+document.getElementById('qr-view-modal').addEventListener('click',function(e){if(e.target===this)closeQRView();});
+document.getElementById('manual-op-modal').addEventListener('click',function(e){if(e.target===this)closeManualOpModal();});
+const rRole=document.getElementById('reg-role');
+if(rRole){
+  rRole.addEventListener('change',function(){document.getElementById('reg-vehicle-field').style.display=this.value==='driver'?'block':'none';});
+  rRole.dispatchEvent(new Event('change'));
+}
+
+// ============ EXPOSE ============
+window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;window.quickLogin=quickLogin;
+window.switchAuthTab=switchAuthTab;window.goTo=goTo;window.toggleSidebar=toggleSidebar;window.closeSidebar=closeSidebar;
+window.openOperatorScanner=openOperatorScanner;window.closeScanner=closeScanner;window.submitManualQR=submitManualQR;
+window.openManualOpModal=openManualOpModal;window.closeManualOpModal=closeManualOpModal;window.submitManualOp=submitManualOp;
+window.addDock=addDock;window.downloadQR=downloadQR;window.showQRView=showQRView;window.closeQRView=closeQRView;
+window.exportCSV=exportCSV;window.renderAdminLogs=renderAdminLogs;window.renderAdminDashboard=renderAdminDashboard;
+window.downloadDriverCard=downloadDriverCard;window.downloadQRById=downloadQRById;
+window.openDriverScanner=openDriverScanner;window.driverSubmitManual=driverSubmitManual;window.driverResetScan=driverResetScan;
+window.createPlanning=createPlanning;window.deletePlanning=deletePlanning;window.renderAdminPlanning=renderAdminPlanning;
+window.updatePlanField=updatePlanField;window.updateLogTimeField=updateLogTimeField;
+window.togglePlanDone=togglePlanDone;window.clearPlanFilters=clearPlanFilters;
+
+// ============ SESSION ============
+const{data:{session}}=await supabase.auth.getSession();
+if(session)await loadUserData(session.user);
+supabase.auth.onAuthStateChange((_,s)=>{if(s&&!currentUser)loadUserData(s.user);});
+
+}); // end DOMContentLoaded
 </script>
 </body>
 </html>
