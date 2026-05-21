@@ -12,7 +12,7 @@
 :root{--bg:#0d0f14;--surface:#161922;--surface2:#1e2330;--border:#2a3045;--accent:#00e5a0;--accent2:#0066ff;--warn:#ffaa00;--danger:#ff4455;--text:#e8eaf2;--muted:#6b7491;--radius:10px;--font-head:'Syne',sans-serif;--font-mono:'IBM Plex Mono',monospace}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh}
-::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .screen{display:none;min-height:100vh}.screen.active{display:flex;flex-direction:column}
 #login-screen{align-items:center;justify-content:center;padding:2rem;background:var(--bg);position:relative;overflow:hidden}
 #login-screen::before{content:'';position:absolute;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(0,229,160,.06) 0%,transparent 70%);pointer-events:none}
@@ -46,6 +46,112 @@ body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-hei
 .page-sub{font-size:.75rem;color:var(--muted);margin-bottom:1.75rem}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.25rem}
 .card-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:1rem}
+
+/* ===== DASHBOARD REDESIGN ===== */
+.dash-hero {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.kpi-card {
+  position: relative;
+  border-radius: 16px;
+  padding: 1.4rem 1.2rem;
+  overflow: hidden;
+  border: 1px solid transparent;
+  transition: transform .2s, box-shadow .2s;
+}
+.kpi-card:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(0,0,0,.4); }
+.kpi-card.green  { background: linear-gradient(135deg,#0a2218 0%,#0d1f14 100%); border-color: rgba(0,229,160,.3); }
+.kpi-card.blue   { background: linear-gradient(135deg,#081428 0%,#0a1628 100%); border-color: rgba(0,102,255,.3); }
+.kpi-card.orange { background: linear-gradient(135deg,#1f1400 0%,#1a1200 100%); border-color: rgba(255,170,0,.3); }
+.kpi-card.red    { background: linear-gradient(135deg,#1f0408 0%,#180306 100%); border-color: rgba(255,68,85,.3); }
+.kpi-card.purple { background: linear-gradient(135deg,#10082a 0%,#0c0620 100%); border-color: rgba(120,80,255,.3); }
+.kpi-card.teal   { background: linear-gradient(135deg,#042020 0%,#031818 100%); border-color: rgba(0,200,180,.3); }
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  opacity: .12;
+}
+.kpi-card.green::before  { background: #00e5a0; }
+.kpi-card.blue::before   { background: #0066ff; }
+.kpi-card.orange::before { background: #ffaa00; }
+.kpi-card.red::before    { background: #ff4455; }
+.kpi-card.purple::before { background: #7850ff; }
+.kpi-card.teal::before   { background: #00c8b4; }
+.kpi-icon {
+  font-size: 1.4rem;
+  margin-bottom: .6rem;
+  display: block;
+}
+.kpi-val {
+  font-family: var(--font-head);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: .3rem;
+}
+.kpi-card.green  .kpi-val { color: #00e5a0; }
+.kpi-card.blue   .kpi-val { color: #4d94ff; }
+.kpi-card.orange .kpi-val { color: #ffaa00; }
+.kpi-card.red    .kpi-val { color: #ff4455; }
+.kpi-card.purple .kpi-val { color: #a07aff; }
+.kpi-card.teal   .kpi-val { color: #00c8b4; }
+.kpi-label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.kpi-trend {
+  position: absolute;
+  bottom: .75rem; right: .85rem;
+  font-size: .65rem;
+  color: var(--muted);
+}
+
+.dash-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+.dash-row-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+
+/* Dock activity pills */
+.dock-activity {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+.dock-pill {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem .85rem;
+  background: var(--surface2);
+  border-radius: 8px;
+  border-left: 3px solid var(--border);
+  transition: border-color .2s;
+}
+.dock-pill.active { border-left-color: var(--accent); }
+.dock-pill-name { font-size: .8rem; font-weight: 600; flex: 1; }
+.dock-pill-count { font-size: .72rem; color: var(--muted); }
+.dock-pill-bar { flex: 2; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.dock-pill-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width .5s ease; }
+
+/* Vehicle breakdown */
+.veh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.veh-item {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: .75rem;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+.veh-item-val { font-family: var(--font-head); font-size: 1.4rem; font-weight: 800; color: var(--accent2); }
+.veh-item-lbl { font-size: .65rem; color: var(--muted); margin-top: .2rem; }
+
+/* Recent ops table in dashboard */
+.recent-ops-table { font-size: .78rem; }
+.recent-ops-table thead th { font-size: .62rem; padding: .5rem .6rem; }
+.recent-ops-table tbody td { padding: .6rem .6rem; }
+
+/* ===== STATS GRID (legacy) ===== */
 .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem}
 .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.25rem;position:relative;overflow:hidden}
 .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-line,var(--border))}
@@ -77,21 +183,13 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--accent);color:#000;padding:.75rem 1.25rem;border-radius:var(--radius);font-size:.82rem;font-weight:500;z-index:9999;opacity:0;transform:translateY(12px);transition:all .3s;pointer-events:none;max-width:320px}
 .toast.show{opacity:1;transform:translateY(0)}.toast.err{background:var(--danger);color:#fff}.toast.info{background:var(--accent2);color:#fff}
 .hamburger{display:none}
-/* ===== NOTIFICATION BADGE ===== */
 .notif-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);margin-left:auto;flex-shrink:0}
+
 /* ===== PLANNING ===== */
-.planning-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:.75rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;transition:border-color .2s}
-.planning-card:hover{border-color:var(--accent)}
-.planning-card.notif-new{border-color:var(--accent2);background:rgba(0,102,255,.07)}
-.planning-badge{font-size:.62rem;font-weight:700;letter-spacing:.1em;padding:.18rem .5rem;border-radius:4px;text-transform:uppercase;flex-shrink:0}
-.planning-badge.shift1{background:rgba(0,229,160,.15);color:var(--accent)}
-.planning-badge.shift2{background:rgba(255,170,0,.15);color:var(--warn)}
-.planning-badge.usine{background:rgba(0,102,255,.15);color:var(--accent2)}
-.planning-badge.dzl{background:rgba(255,68,85,.15);color:var(--danger)}
-.planning-info{flex:1;min-width:200px}
-.planning-info .p-date{font-size:.72rem;color:var(--muted);margin-bottom:.25rem}
-.planning-info .p-route{font-size:.9rem;font-weight:600;color:var(--text)}
-.planning-info .p-driver{font-size:.72rem;color:var(--muted);margin-top:.2rem}
+.badge.shift1{background:rgba(0,229,160,.15);color:var(--accent)}
+.badge.shift2{background:rgba(255,170,0,.15);color:var(--warn)}
+.badge.dzl{background:rgba(255,68,85,.15);color:var(--danger)}
+
 /* ===== QR CARD ===== */
 .qr-card-photo{display:flex;justify-content:center;margin:.5rem 0}
 .qr-card-inner{width:320px;background:linear-gradient(135deg,#0d1f14 0%,#0a1628 50%,#0d1f14 100%);border:1px solid var(--accent);border-radius:20px;padding:1.5rem;box-shadow:0 0 40px rgba(0,229,160,.15);position:relative;overflow:hidden}
@@ -104,85 +202,116 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 .qr-card-code{text-align:center;font-size:.6rem;color:var(--muted);letter-spacing:.08em;margin-bottom:1rem;word-break:break-all}
 .qr-card-footer{text-align:center;font-size:.65rem;color:rgba(107,116,145,.7);border-top:1px solid rgba(42,48,69,.5);padding-top:.75rem}
 .qr-white-bg canvas,.qr-white-bg img{border-radius:8px!important;border:4px solid #fff!important;box-shadow:0 0 0 1px rgba(0,229,160,.4),0 4px 20px rgba(0,0,0,.4)!important;background:#fff!important;display:block!important}
-/* ===== SCAN STEP (opérateur) ===== */
+
+/* ===== SCAN STEP ===== */
 .scan-step-box{display:flex;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
 .scan-step{flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.25rem;text-align:center}
 .scan-step.done{border-color:var(--accent)}.step-num{width:32px;height:32px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:.8rem;margin:0 auto .75rem}
 .scan-step.done .step-num{background:var(--accent);color:#000}.step-label{font-size:.78rem;font-weight:500}.step-val{font-size:.7rem;color:var(--accent);margin-top:.25rem;word-break:break-all}
-/* STATUS BOX */
 .status-waiting-box{background:rgba(107,116,145,.1);border:1px solid var(--muted);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--muted);line-height:1.6}
 .status-active-box{background:rgba(0,102,255,.08);border:1px solid var(--accent2);border-radius:10px;padding:1rem 1.25rem;font-size:.82rem;color:var(--accent2);line-height:1.6}
-  .badge.shift1, .badge.shift2, .badge.dzl {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.7rem;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-  /* === ADMIN PLANNING ATTRACTIF === */
-.planning-stats {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.5rem;
-}
-.stat-pill {
-  background: var(--surface2);
-  border-radius: 40px;
-  padding: 0.4rem 1rem;
-  font-size: 0.75rem;
+
+/* ===== PLANNING ADMIN TABLE (Excel-style) ===== */
+.planning-excel-wrap {
+  overflow-x: auto;
+  border-radius: 12px;
   border: 1px solid var(--border);
+  background: var(--surface);
 }
-.stat-pill strong {
-  font-weight: 700;
-  color: var(--accent);
-  margin-right: 0.4rem;
-}
-.admin-planning-table {
+.planning-excel {
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.8rem;
+  border-collapse: collapse;
+  font-size: .75rem;
+  min-width: 1200px;
 }
-.admin-planning-table th {
-  background: var(--surface2);
-  padding: 0.9rem 0.8rem;
-  font-weight: 600;
+.planning-excel thead tr {
+  background: linear-gradient(90deg, #1a2035 0%, #161922 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.planning-excel thead th {
+  padding: .6rem .6rem;
+  font-size: .62rem;
+  font-weight: 700;
   text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
+  letter-spacing: .08em;
   color: var(--accent);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 2px solid var(--accent);
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  background: #1a2035;
 }
-.admin-planning-table td {
-  padding: 0.9rem 0.8rem;
-  border-bottom: 1px solid rgba(42,48,69,0.3);
+.planning-excel thead th:last-child { border-right: none; }
+.planning-excel tbody tr {
+  border-bottom: 1px solid rgba(42,48,69,.4);
+  transition: background .12s;
+}
+.planning-excel tbody tr:hover { background: rgba(0,229,160,.04); }
+.planning-excel tbody td {
+  padding: .4rem .5rem;
+  border-right: 1px solid rgba(42,48,69,.3);
   vertical-align: middle;
 }
-.admin-planning-table tr {
-  transition: all 0.2s;
-}
-.admin-planning-table tr:hover {
-  background: rgba(0,229,160,0.05);
-  transform: scale(1.01);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-}
-.badge-status {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 500;
-}
-.status-done { background: rgba(0,229,160,0.2); color: var(--accent); }
-.status-progress { background: rgba(0,102,255,0.2); color: var(--accent2); }
-.status-planned { background: rgba(107,116,145,0.2); color: var(--muted); }
-.time-value {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
+.planning-excel tbody td:last-child { border-right: none; }
+
+/* Inline editable cell */
+.cell-edit {
+  background: none;
+  border: none;
   color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  width: 100%;
+  padding: .2rem .3rem;
+  border-radius: 4px;
+  outline: none;
+  transition: background .15s, border .15s;
 }
+.cell-edit:focus {
+  background: rgba(0,229,160,.08);
+  outline: 1px solid var(--accent);
+}
+.cell-edit option { background: var(--surface2); }
+
+/* Checkbox oui/non */
+.check-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.check-cell input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+/* Time input in planning */
+.time-input {
+  background: none;
+  border: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .73rem;
+  width: 80px;
+  padding: .2rem .3rem;
+  border-radius: 4px;
+  outline: none;
+  transition: background .15s;
+}
+.time-input:focus { background: rgba(0,229,160,.08); outline: 1px solid var(--accent); }
+.time-input::-webkit-calendar-picker-indicator { filter: invert(1) opacity(.4); }
+
+/* Computed duration cell */
+.dur-cell {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--accent);
+  text-align: center;
+}
+
+/* Planning filter bar */
 .filter-bar-modern {
   background: var(--surface);
   padding: 1rem;
@@ -194,14 +323,33 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
   align-items: flex-end;
   border: 1px solid var(--border);
 }
+
+/* Planning stats pills */
+.planning-stats { display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.25rem; }
+.stat-pill {
+  background: var(--surface2);
+  border-radius: 40px;
+  padding: .4rem 1rem;
+  font-size: .75rem;
+  border: 1px solid var(--border);
+}
+.stat-pill strong { font-weight:700;color:var(--accent);margin-right:.4rem; }
+
+/* Row counter */
+.row-num { color: var(--muted); font-size: .65rem; text-align: center; }
+
 @media(max-width:700px){
 .sidebar{transform:translateX(-100%);transition:transform .25s}.sidebar.open{transform:translateX(0)}
 .main-content{margin-left:0;padding:1rem}
 .hamburger{display:flex;align-items:center;gap:.6rem;position:fixed;top:1rem;left:1rem;z-index:200;background:var(--surface);border:1px solid var(--border);padding:.5rem .85rem;border-radius:8px;font-size:.75rem;cursor:pointer;color:var(--text)}
 .info-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}
+.dash-hero{grid-template-columns:1fr 1fr}
+.dash-row,.dash-row-3{grid-template-columns:1fr}
 }
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .page.active{animation:fadeIn .25s ease}
+@keyframes countUp{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.kpi-val{animation:countUp .4s ease forwards}
 .nav-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99}.nav-backdrop.open{display:block}
 </style>
 </head>
@@ -298,7 +446,6 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
             <button class="btn sm" onclick="downloadDriverCard()">📥 Télécharger la carte</button>
           </div>
         </div>
-        <!-- Scanner dock → statut waiting uniquement -->
         <div class="card">
           <div class="card-title">📷 Scanner Quai</div>
           <div style="font-size:.78rem;color:var(--muted);margin-bottom:1rem;line-height:1.7">
@@ -370,22 +517,50 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
 
       <!-- ===== ADMIN : DASHBOARD ===== -->
       <div id="page-admin-dashboard" class="page">
-        <div class="page-title">Dashboard</div>
-        <div class="page-sub">Vue d'ensemble — KPIs opérationnels</div>
-        <div class="filter-bar" style="margin-bottom:1.5rem">
-          <label style="font-size:.72rem;color:var(--muted);white-space:nowrap">Période :</label>
-          <select id="dash-period" onchange="renderAdminDashboard()" style="padding:.45rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none">
-            <option value="today">Aujourd'hui</option>
-            <option value="week">7 derniers jours</option>
-            <option value="month" selected>30 derniers jours</option>
-            <option value="all">Tout</option>
-          </select>
-          <input type="date" id="dash-from" style="padding:.45rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none">
-          <input type="date" id="dash-to" style="padding:.45rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none">
-          <button class="btn sm" onclick="renderAdminDashboard()">Appliquer</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
+          <div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-sub" style="margin-bottom:0">Vue d'ensemble — KPIs opérationnels</div>
+          </div>
+          <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+            <label style="font-size:.72rem;color:var(--muted)">Période :</label>
+            <select id="dash-period" onchange="renderAdminDashboard()" style="padding:.45rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none">
+              <option value="today">Aujourd'hui</option>
+              <option value="week">7 derniers jours</option>
+              <option value="month" selected>30 derniers jours</option>
+              <option value="all">Tout</option>
+            </select>
+            <input type="date" id="dash-from" style="padding:.45rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none">
+            <input type="date" id="dash-to" style="padding:.45rem .75rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-mono);font-size:.78rem;outline:none">
+            <button class="btn sm" onclick="renderAdminDashboard()">Appliquer</button>
+          </div>
         </div>
-        <div class="stats-grid" id="admin-stats-grid"></div>
-        <div class="card"><div class="card-title">Camions actifs en ce moment</div><div class="tbl-wrap"><table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente</th><th>Entrée</th><th>Durée</th><th>Statut</th></tr></thead><tbody id="admin-active-tbody"></tbody></table></div></div>
+
+        <!-- KPI Hero Cards -->
+        <div class="dash-hero" id="admin-kpi-hero"></div>
+
+        <!-- Row 2: Active trucks + Dock activity -->
+        <div class="dash-row-3">
+          <div class="card" style="margin-bottom:0">
+            <div class="card-title">🚛 Toutes les opérations de la période</div>
+            <div class="tbl-wrap">
+              <table class="recent-ops-table">
+                <thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente</th><th>Entrée</th><th>Durée</th><th>Statut</th></tr></thead>
+                <tbody id="admin-all-ops-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:1rem">
+            <div class="card" style="margin-bottom:0">
+              <div class="card-title">📍 Activité par dock</div>
+              <div id="admin-dock-activity" class="dock-activity"></div>
+            </div>
+            <div class="card" style="margin-bottom:0">
+              <div class="card-title">🚚 Par type de véhicule</div>
+              <div id="admin-veh-breakdown" class="veh-grid"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ===== ADMIN : LOGS ===== -->
@@ -430,10 +605,12 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
       <!-- ===== ADMIN : PLANNING ===== -->
       <div id="page-admin-planning" class="page">
         <div class="page-title">Planning de chargement</div>
-        <div class="page-sub">Gérez et assignez les missions aux chauffeurs</div>
+        <div class="page-sub">Gérez et assignez les missions aux chauffeurs — tableau modifiable en direct</div>
+
+        <!-- Create mission form -->
         <div class="card">
-          <div class="card-title">Créer une mission</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+          <div class="card-title">➕ Créer une mission</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1rem">
             <div class="field" style="margin:0"><label>Date</label><input type="date" id="plan-date"></div>
             <div class="field" style="margin:0"><label>Shift</label>
               <select id="plan-shift">
@@ -441,40 +618,49 @@ tbody tr{border-bottom:1px solid rgba(42,48,69,.5);transition:background .15s}tb
                 <option value="Shift 2">Shift 2</option>
               </select>
             </div>
-            <div class="field" style="margin:0"><label>Du dépôt (origine)</label>
+            <div class="field" style="margin:0"><label>Du Dépôt</label>
               <select id="plan-from">
                 <option value="USINE">USINE</option>
                 <option value="DZL">DZL</option>
               </select>
             </div>
-            <div class="field" style="margin:0"><label>Au dépôt (destination)</label><input type="text" id="plan-to" placeholder="ex: DZL Casablanca, Usine Fès..."></div>
+            <div class="field" style="margin:0"><label>Au Dépôt (dest.)</label><input type="text" id="plan-to" placeholder="ex: DZL Casa, Usine Fès..."></div>
             <div class="field" style="margin:0"><label>Chauffeur</label>
               <select id="plan-driver"><option value="">— Sélectionner —</option></select>
             </div>
             <div class="field" style="margin:0"><label>Véhicule (auto)</label><input type="text" id="plan-vehicle" readonly style="background:var(--surface);color:var(--muted)"></div>
           </div>
-          <div class="field"><label>Note / Instructions</label><textarea id="plan-note" placeholder="Instructions particulières..."></textarea></div>
-          <button class="btn sm" onclick="createPlanning()" style="margin-top:.5rem">➕ Créer la mission</button>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:.75rem;align-items:end">
+            <div class="field" style="margin:0"><label>Note / Instructions</label><textarea id="plan-note" placeholder="Instructions particulières..." style="min-height:50px"></textarea></div>
+            <button class="btn sm" onclick="createPlanning()" style="margin-bottom:0;height:fit-content">➕ Créer</button>
+          </div>
         </div>
-     <div class="filter-bar-modern">
-  <div class="field" style="margin:0; flex:1">
-    <label>📅 Date</label>
-    <input type="date" id="plan-filter-date" oninput="renderAdminPlanning()" style="width:100%">
-  </div>
-  <div class="field" style="margin:0">
-    <label>🕒 Shift</label>
-    <select id="plan-filter-shift" onchange="renderAdminPlanning()">
-      <option value="">Tous</option>
-      <option value="Shift 1">Shift 1</option>
-      <option value="Shift 2">Shift 2</option>
-    </select>
-  </div>
-  <div class="field" style="margin:0; flex:2">
-    <label>🔍 Recherche (chauffeur / destination)</label>
-    <input type="text" id="plan-filter-search" placeholder="Nom ou destination..." oninput="renderAdminPlanning()" style="width:100%">
-  </div>
-  <button class="btn sm secondary" onclick="document.getElementById('plan-filter-date').value='';document.getElementById('plan-filter-shift').value='';document.getElementById('plan-filter-search').value='';renderAdminPlanning();">Réinitialiser</button>
-</div>
+
+        <!-- Filters -->
+        <div class="filter-bar-modern">
+          <div class="field" style="margin:0;flex:1;min-width:140px">
+            <label>📅 Date</label>
+            <input type="date" id="plan-filter-date" oninput="renderAdminPlanning()" style="width:100%">
+          </div>
+          <div class="field" style="margin:0">
+            <label>🕒 Shift</label>
+            <select id="plan-filter-shift" onchange="renderAdminPlanning()">
+              <option value="">Tous</option>
+              <option value="Shift 1">Shift 1</option>
+              <option value="Shift 2">Shift 2</option>
+            </select>
+          </div>
+          <div class="field" style="margin:0;flex:2;min-width:200px">
+            <label>🔍 Chauffeur / destination</label>
+            <input type="text" id="plan-filter-search" placeholder="Nom ou destination..." oninput="renderAdminPlanning()" style="width:100%">
+          </div>
+          <button class="btn sm secondary" onclick="clearPlanFilters()">Réinitialiser</button>
+        </div>
+
+        <!-- Stats pills -->
+        <div class="planning-stats" id="planning-stats-pills"></div>
+
+        <!-- Excel-like table -->
         <div id="admin-planning-list"></div>
       </div>
 
@@ -534,6 +720,7 @@ let currentUser = null, currentProfile = null, currentDriver = null;
 function showMsg(id,txt,type){const el=document.getElementById(id);if(el){el.textContent=txt;el.className='msg '+type;}}
 function showToast(msg,type='ok'){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.className='toast show'+(type==='err'?' err':type==='info'?' info':'');setTimeout(()=>{t.className='toast';},3500);}
 function fmtTime(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+function fmtTimeShort(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
 function fmtDur(min){if(min==null||min===undefined||isNaN(min))return'—';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m>0?' '+m+'min':''}`:`${m}min`;}
 function badgeHtml(s){const map={waiting:'En attente',arrived:'Au dock',loading:'Chargement',completed:'Terminé'};return`<span class="badge ${s}">${map[s]||s}</span>`;}
 function isDZL(str){return str&&/dzl/i.test(str.replace(/\s/g,''));}
@@ -545,8 +732,13 @@ function dateCut(period){
   else return null;
   return from.toISOString();
 }
+function minsBetween(a,b){if(!a||!b)return null;return Math.round((new Date(b)-new Date(a))/60000);}
+function timeToISO(dateStr, timeStr) {
+  if(!dateStr||!timeStr) return null;
+  return new Date(dateStr + 'T' + timeStr + ':00').toISOString();
+}
 
-// ============ QR (local) ============
+// ============ QR ============
 function generateQRInto(id,text,size=200){
   const c=document.getElementById(id);if(!c||!text)return;
   c.innerHTML='';
@@ -628,8 +820,8 @@ async function loadUserData(user){
     const{data:drv}=await supabase.from('drivers').select('*').eq('user_id',user.id).single();
     currentDriver=drv;
   }
-  const loginS = document.getElementById('login-screen'); if(loginS) loginS.classList.remove('active');
-  const appS = document.getElementById('app-screen'); if(appS) appS.classList.add('active');
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('app-screen').classList.add('active');
   setupNav();
 }
 
@@ -674,7 +866,7 @@ function setupNav(){
   document.getElementById('nav-items').innerHTML=navConfig[role].map(n=>`
     <div class="nav-item" id="nav-${n.id}" onclick="goTo('${n.id}')">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${n.icon}</svg>
-      ${n.label}${n.notif?'<span class="notif-dot" id="notif-dot-'+n.id+'"></span>':''}
+      ${n.label}${n.notif?'<span class="notif-dot" id="notif-dot-'+n.id+'" style="display:none"></span>':''}
     </div>`).join('');
   goTo(navConfig[role][0].id);
   if(role==='driver')checkDriverNotifs();
@@ -697,15 +889,14 @@ function goTo(pageId){
   if(pageId==='admin-docks')renderAdminDocks();
   if(pageId==='admin-planning')renderAdminPlanning();
 }
-function toggleSidebar(){const s=document.getElementById('sidebar'); if(s) s.classList.toggle('open');const b=document.getElementById('nav-backdrop'); if(b) b.classList.toggle('open');}
-function closeSidebar(){const s=document.getElementById('sidebar'); if(s) s.classList.remove('open');const b=document.getElementById('nav-backdrop'); if(b) b.classList.remove('open');}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('nav-backdrop').classList.toggle('open');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('nav-backdrop').classList.remove('open');}
 
 // ============ DRIVER PROFILE ============
 async function renderDriverProfile(){
   if(!currentDriver){document.getElementById('driver-profile-header').innerHTML='<p style="color:var(--muted)">Profil chauffeur non trouvé.</p>';return;}
   const u=currentProfile,d=currentDriver;
-  const names = u.name.split(' ');
-  const ini= names.map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const ini=u.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
   document.getElementById('driver-profile-header').innerHTML=`<div class="avatar">${ini}</div><div class="profile-info"><h2>${u.name}</h2><p>${u.email} · ${u.phone||'—'}</p></div>`;
   document.getElementById('driver-info-grid').innerHTML=`
     <div class="info-item"><label>Type véhicule</label><span>${d.vehicle}</span></div>
@@ -757,8 +948,8 @@ async function downloadDriverCard(){
   }catch(e){console.error(e);showToast('Erreur génération carte','err');}
 }
 
-// ============ DRIVER : SCAN DOCK (→ waiting seulement) ============
-let driverQrScanner=null,driverScannedDock=null;
+// ============ DRIVER : SCAN DOCK ============
+let driverQrScanner=null;
 function openDriverScanner(){
   const re=document.getElementById('driver-qr-reader');
   const me=document.getElementById('driver-scan-manual');
@@ -786,22 +977,19 @@ async function driverProcessDockQR(code){
   if(existing&&existing.length){showToast('Vous êtes déjà enregistré (statut: '+existing[0].status+')','err');return;}
   const{data:dock}=await supabase.from('docks').select('*').eq('qr_code',code).single();
   if(!dock){showToast('QR dock non reconnu','err');return;}
-  // Insérer log avec statut "waiting"
   const{error}=await supabase.from('logs').insert([{driver_id:currentDriver.id,dock_id:dock.id,status:'waiting',waiting_time:new Date().toISOString()}]);
   if(error){showToast(error.message,'err');return;}
   await supabase.from('drivers').update({status:'waiting'}).eq('id',currentDriver.id);
-  driverScannedDock=dock;
   document.getElementById('driver-scan-dock-name').textContent='📍 '+dock.name;
   document.getElementById('driver-scan-result').style.display='block';
   showToast('✅ Présence signalée au '+dock.name+' — En attente opérateur','info');
   renderDriverProfile();
 }
 function driverResetScan(){
-  driverScannedDock=null;
   if(driverQrScanner){try{driverQrScanner.stop();}catch(e){}driverQrScanner=null;}
-  const res = document.getElementById('driver-scan-result'); if(res) res.style.display='none';
-  const reader = document.getElementById('driver-qr-reader'); if(reader) reader.style.display='none';
-  const manual = document.getElementById('driver-scan-manual'); if(manual) manual.style.display='none';
+  const res=document.getElementById('driver-scan-result');if(res)res.style.display='none';
+  const re=document.getElementById('driver-qr-reader');if(re)re.style.display='none';
+  const me=document.getElementById('driver-scan-manual');if(me)me.style.display='none';
   const m=document.getElementById('driver-manual-qr');if(m)m.value='';
 }
 
@@ -811,87 +999,46 @@ async function renderDriverLogs(){
   const{data:logs}=await supabase.from('logs').select('*,docks(name)').eq('driver_id',currentDriver.id).order('waiting_time',{ascending:false});
   const tb=document.getElementById('driver-logs-tbody');
   if(!logs||!logs.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun passage</td></tr>';return;}
-  tb.innerHTML=logs.map(l=>{
-    return`<tr><td>${l.docks?.name||'—'}</td><td>${fmtTime(l.waiting_time)}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.loading_duration)}</td><td>${badgeHtml(l.status)}</td></tr>`;
-  }).join('');
+  tb.innerHTML=logs.map(l=>`<tr><td>${l.docks?.name||'—'}</td><td>${fmtTime(l.waiting_time)}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.loading_duration)}</td><td>${badgeHtml(l.status)}</td></tr>`).join('');
 }
 
 // ============ DRIVER : PLANNING ============
-async function renderDriverPlanning() {
-  if (!currentDriver) return;
-  const { data: plans } = await supabase
-    .from('planning')
-    .select('*')
-    .eq('driver_id', currentDriver.id)
-    .order('date', { ascending: false });
-
-  const container = document.getElementById('driver-planning-list');
-  if (!plans || !plans.length) {
-    container.innerHTML = '<div class="card"><p class="no-data">Aucune mission assignée.</p></div>';
-    return;
+async function renderDriverPlanning(){
+  if(!currentDriver)return;
+  const{data:plans}=await supabase.from('planning').select('*').eq('driver_id',currentDriver.id).order('date',{ascending:false});
+  const container=document.getElementById('driver-planning-list');
+  if(!plans||!plans.length){container.innerHTML='<div class="card"><p class="no-data">Aucune mission assignée.</p></div>';return;}
+  const unread=plans.filter(p=>!p.read_by_driver);
+  if(unread.length){
+    await supabase.from('planning').update({read_by_driver:true}).in('id',unread.map(p=>p.id));
+    const dot=document.getElementById('notif-dot-driver-planning');
+    if(dot)dot.style.display='none';
   }
-
-  // Marquer comme lu
-  const unread = plans.filter(p => !p.read_by_driver);
-  if (unread.length) {
-    await supabase.from('planning').update({ read_by_driver: true }).in('id', unread.map(p => p.id));
-    const dot = document.getElementById('notif-dot-driver-planning');
-    if (dot) dot.style.display = 'none';
+  const today=new Date().toISOString().slice(0,10);
+  let html=`<div class="card" style="overflow-x:auto"><table style="min-width:500px;width:100%"><thead><tr><th>Date</th><th>Shift</th><th>Départ</th><th>Destination</th><th>Véhicule</th><th>Note</th></tr></thead><tbody>`;
+  for(const p of plans){
+    const isToday=p.date===today;
+    const fromDepot=p.from_depot==='USINE'?'USI':p.from_depot;
+    html+=`<tr style="${isToday?'background:rgba(0,102,255,.1);':''}">
+      <td>${p.date}${isToday?' <strong style="color:var(--accent)">(auj.)</strong>':''}</td>
+      <td><span class="badge ${p.shift==='Shift 1'?'shift1':'shift2'}">${p.shift==='Shift 1'?'SHIFT01':'SHIFT02'}</span></td>
+      <td>${fromDepot}</td>
+      <td>${p.to_depot||'—'}${isDZL(p.to_depot)?' <span class="badge dzl">DZL</span>':''}</td>
+      <td>${currentDriver.vehicle}</td>
+      <td>${p.note||'—'}</td></tr>`;
   }
-
-  // Construction du tableau pour le chauffeur
-  let html = `
-    <div class="card" style="overflow-x: auto;">
-      <table style="min-width: 500px; width: 100%;">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Shift</th>
-            <th>Départ</th>
-            <th>Destination</th>
-            <th>Véhicule</th>
-            <th>Note</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
-
-  const today = new Date().toISOString().slice(0, 10);
-  for (const p of plans) {
-    const isToday = p.date === today;
-    const fromDepot = p.from_depot === 'USINE' ? 'USI' : p.from_depot;
-    const toDepot = p.to_depot || '—';
-    html += `
-      <tr style="${isToday ? 'background: rgba(0,102,255,.1);' : ''}">
-        <td>${p.date}${isToday ? ' <strong style="color:var(--accent)">(auj.)</strong>' : ''}</td>
-        <td><span class="badge ${p.shift === 'Shift 1' ? 'shift1' : 'shift2'}" style="background:${p.shift === 'Shift 1' ? 'rgba(0,229,160,.15)' : 'rgba(255,170,0,.15)'}; color:${p.shift === 'Shift 1' ? 'var(--accent)' : 'var(--warn)'};">${p.shift === 'Shift 1' ? 'SHIFT01' : 'SHIFT02'}</span></td>
-        <td>${fromDepot}</td>
-        <td>${toDepot}${isDZL(p.to_depot) ? ' <span class="badge dzl" style="background:rgba(255,68,85,.15); color:var(--danger);">DZL</span>' : ''}</td>
-        <td>${currentDriver.vehicle}</td>
-        <td>${p.note || '—'}</td>
-      </tr>
-    `;
-  }
-
-  html += `
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  container.innerHTML = html;
+  html+=`</tbody></table></div>`;
+  container.innerHTML=html;
 }
 
 async function checkDriverNotifs(){
   if(!currentDriver)return;
   const{data}=await supabase.from('planning').select('id').eq('driver_id',currentDriver.id).eq('read_by_driver',false);
   const dot=document.getElementById('notif-dot-driver-planning');
-  if(dot&&data&&data.length>0)dot.style.display='block';
-  else if(dot)dot.style.display='none';
+  if(dot)dot.style.display=(data&&data.length>0)?'block':'none';
 }
 
 // ============ OPERATOR SCAN ============
-// Logique : 1er scan → entrée, 2ème scan → sortie
 let opQrScanner=null;
 
 async function renderOperatorScan(){
@@ -932,25 +1079,17 @@ async function submitManualOp(){
 }
 
 async function processOperatorScan(code){
-  // Identifier le chauffeur
   const{data:driver}=await supabase.from('drivers').select('*,profiles!drivers_user_id_fkey(name,phone)').eq('qr_code',code).single();
   if(!driver){showToast('QR chauffeur non reconnu','err');return;}
   const driverName=driver.profiles?.name||'Chauffeur';
-  // Chercher log actif
   const{data:activeLog}=await supabase.from('logs').select('*,docks(name)').eq('driver_id',driver.id).neq('status','completed').order('waiting_time',{ascending:false}).limit(1).single();
-
   const box=document.getElementById('op-scan-result');
   box.style.display='block';
-
   if(!activeLog){
-    // Pas de log actif — informer l'opérateur
     document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--warn)">⚠️ <strong>${driverName}</strong> n'est pas enregistré à un dock. Le chauffeur doit d'abord scanner le QR du dock.</span>`;
-    showToast('Chauffeur non présent à un dock','err');
-    return;
+    showToast('Chauffeur non présent à un dock','err');return;
   }
-
   if(activeLog.status==='waiting'){
-    // 1er scan opérateur → ENTRÉE
     const now=new Date().toISOString();
     const waitMin=activeLog.waiting_time?Math.round((new Date(now)-new Date(activeLog.waiting_time))/60000):0;
     const{error}=await supabase.from('logs').update({status:'arrived',entry_time:now,wait_duration:waitMin}).eq('id',activeLog.id);
@@ -960,7 +1099,6 @@ async function processOperatorScan(code){
     showToast('✅ Entrée enregistrée — '+driverName,'ok');
     await renderOperatorActive();
   } else if(activeLog.status==='arrived'){
-    // 2ème scan opérateur → SORTIE
     const now=new Date().toISOString();
     const loadMin=activeLog.entry_time?Math.round((new Date(now)-new Date(activeLog.entry_time))/60000):0;
     const{error}=await supabase.from('logs').update({status:'completed',exit_time:now,loading_duration:loadMin}).eq('id',activeLog.id);
@@ -969,8 +1107,6 @@ async function processOperatorScan(code){
     document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--accent2)">🏁 <strong>SORTIE</strong> — Opération terminée · ${driverName}<br>Dock : ${activeLog.docks?.name||'—'} · Durée chargement : ${fmtDur(loadMin)}</span>`;
     showToast('🏁 Sortie enregistrée — '+driverName,'info');
     await renderOperatorActive();
-  } else {
-    document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--muted)">Statut inconnu pour ${driverName}.</span>`;
   }
 }
 
@@ -978,13 +1114,7 @@ async function renderOperatorActive(){
   const{data:logs}=await supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)').neq('status','completed');
   const tb=document.getElementById('operator-active-tbody');
   if(!logs||!logs.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun camion actif</td></tr>';return;}
-  tb.innerHTML=logs.map(l=>`<tr>
-    <td>${l.drivers?.profiles?.name||'—'}</td>
-    <td>${l.drivers?.vehicle||'—'}</td>
-    <td>${l.docks?.name||'—'}</td>
-    <td>${fmtTime(l.waiting_time)}</td>
-    <td>${fmtTime(l.entry_time)}</td>
-    <td>${badgeHtml(l.status)}</td></tr>`).join('');
+  tb.innerHTML=logs.map(l=>`<tr><td>${l.drivers?.profiles?.name||'—'}</td><td>${l.drivers?.vehicle||'—'}</td><td>${l.docks?.name||'—'}</td><td>${fmtTime(l.waiting_time)}</td><td>${fmtTime(l.entry_time)}</td><td>${badgeHtml(l.status)}</td></tr>`).join('');
 }
 
 async function renderDockQRs(){
@@ -992,7 +1122,7 @@ async function renderDockQRs(){
   const c=document.getElementById('dock-qr-list');c.innerHTML='';
   if(!docks)return;
   for(const dk of docks){
-    const w=document.createElement('div');w.className='';
+    const w=document.createElement('div');
     w.style.cssText='background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1rem;text-align:center;min-width:160px;';
     const id='dqr-'+dk.id;
     const qd=document.createElement('div');qd.id=id;qd.className='qr-white-bg';qd.style.cssText='width:130px;height:130px;margin:0 auto .5rem';
@@ -1006,7 +1136,7 @@ async function renderDockQRs(){
 function stopCamera(){if(opQrScanner){try{opQrScanner.stop();}catch(e){}opQrScanner=null;}}
 function closeScanner(){stopCamera();document.getElementById('scanner-modal').classList.remove('open');}
 
-// ============ ADMIN DASHBOARD ============
+// ============ ADMIN DASHBOARD (REDESIGNED) ============
 async function renderAdminDashboard(){
   const period=document.getElementById('dash-period')?.value||'month';
   const fromDate=document.getElementById('dash-from')?.value;
@@ -1019,46 +1149,100 @@ async function renderAdminDashboard(){
     const cut=dateCut(period);
     if(cut)query=query.gte('waiting_time',cut);
   }
-  const{data:logs}=await query;
-  const{data:drivers}=await supabase.from('drivers').select('id');
-  const{data:docks}=await supabase.from('docks').select('id');
-  const{data:plans}=await supabase.from('planning').select('from_depot,to_depot');
+  const[{data:logs},{data:drivers},{data:docks},{data:plans}]=await Promise.all([
+    query,
+    supabase.from('drivers').select('id,vehicle'),
+    supabase.from('docks').select('id,name'),
+    supabase.from('planning').select('from_depot,to_depot')
+  ]);
 
   const allLogs=logs||[];
   const completed=allLogs.filter(l=>l.status==='completed');
   const active=allLogs.filter(l=>l.status!=='completed');
 
-  // Temps attente moyen
   const waitTimes=completed.filter(l=>l.wait_duration!=null).map(l=>l.wait_duration);
   const avgWait=waitTimes.length?Math.round(waitTimes.reduce((a,b)=>a+b,0)/waitTimes.length):0;
-  // Temps chargement moyen
   const loadTimes=completed.filter(l=>l.loading_duration!=null).map(l=>l.loading_duration);
   const avgLoad=loadTimes.length?Math.round(loadTimes.reduce((a,b)=>a+b,0)/loadTimes.length):0;
-
-  // Bardage : USINE → DZL (depuis planning)
   const allPlans=plans||[];
   const bardage=allPlans.filter(p=>p.from_depot==='USINE'&&isDZL(p.to_depot)).length;
 
-  document.getElementById('admin-stats-grid').innerHTML=`
-    <div class="stat-card" style="--accent-line:var(--accent)"><div class="stat-val green">${active.length}</div><div class="stat-label">Camions actifs</div></div>
-    <div class="stat-card" style="--accent-line:var(--accent2)"><div class="stat-val blue">${completed.length}</div><div class="stat-label">Passages terminés</div></div>
-    <div class="stat-card" style="--accent-line:var(--warn)"><div class="stat-val orange">${fmtDur(avgWait)}</div><div class="stat-label">⏳ T. attente moyen</div></div>
-    <div class="stat-card" style="--accent-line:var(--accent)"><div class="stat-val green">${fmtDur(avgLoad)}</div><div class="stat-label">⚙️ T. charg. moyen</div></div>
-    <div class="stat-card" style="--accent-line:var(--danger)"><div class="stat-val red">${bardage}</div><div class="stat-label">🏭 Bardages Usine→DZL</div></div>
-    <div class="stat-card"><div class="stat-val">${drivers?.length||0}</div><div class="stat-label">Chauffeurs</div></div>
-    <div class="stat-card"><div class="stat-val">${docks?.length||0}</div><div class="stat-label">Docks</div></div>
-    <div class="stat-card"><div class="stat-val">${allLogs.length}</div><div class="stat-label">Total passages</div></div>
+  // KPI Cards
+  document.getElementById('admin-kpi-hero').innerHTML=`
+    <div class="kpi-card green">
+      <span class="kpi-icon">🚛</span>
+      <div class="kpi-val">${active.length}</div>
+      <div class="kpi-label">Camions actifs</div>
+      <div class="kpi-trend">en ce moment</div>
+    </div>
+    <div class="kpi-card blue">
+      <span class="kpi-icon">✅</span>
+      <div class="kpi-val">${completed.length}</div>
+      <div class="kpi-label">Passages terminés</div>
+      <div class="kpi-trend">période sélectionnée</div>
+    </div>
+    <div class="kpi-card orange">
+      <span class="kpi-icon">⏳</span>
+      <div class="kpi-val">${fmtDur(avgWait)||'—'}</div>
+      <div class="kpi-label">T. attente moyen</div>
+      <div class="kpi-trend">${waitTimes.length} mesures</div>
+    </div>
+    <div class="kpi-card teal">
+      <span class="kpi-icon">⚙️</span>
+      <div class="kpi-val">${fmtDur(avgLoad)||'—'}</div>
+      <div class="kpi-label">T. chargement moyen</div>
+      <div class="kpi-trend">${loadTimes.length} mesures</div>
+    </div>
+    <div class="kpi-card red">
+      <span class="kpi-icon">🏭</span>
+      <div class="kpi-val">${bardage}</div>
+      <div class="kpi-label">Bardages Usine→DZL</div>
+      <div class="kpi-trend">planning total</div>
+    </div>
+    <div class="kpi-card purple">
+      <span class="kpi-icon">📋</span>
+      <div class="kpi-val">${allLogs.length}</div>
+      <div class="kpi-label">Total passages</div>
+      <div class="kpi-trend">${drivers?.length||0} chauffeurs · ${docks?.length||0} docks</div>
+    </div>
   `;
 
-  // Table actifs
-  const{data:activeLogs}=await supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)').neq('status','completed');
-  const tb=document.getElementById('admin-active-tbody');
-  if(!activeLogs||!activeLogs.length){tb.innerHTML='<tr><td colspan="7" class="no-data">Aucun camion actif</td></tr>';return;}
-  tb.innerHTML=activeLogs.map(l=>{
-    const dur=l.entry_time?Math.round((new Date()-new Date(l.entry_time))/60000):null;
-    const wt=l.wait_duration;
-    return`<tr><td>${l.drivers?.profiles?.name||'—'}</td><td>${l.drivers?.vehicle||'—'}</td><td>${l.docks?.name||'—'}</td><td>${fmtDur(wt)}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtDur(dur)}</td><td>${badgeHtml(l.status)}</td></tr>`;
-  }).join('');
+  // All operations table (not just active)
+  const tb=document.getElementById('admin-all-ops-tbody');
+  if(!allLogs.length){tb.innerHTML='<tr><td colspan="7" class="no-data">Aucune opération sur cette période</td></tr>';}
+  else{
+    tb.innerHTML=allLogs.slice(0,50).map(l=>{
+      const dur=l.entry_time&&l.status!=='completed'?Math.round((new Date()-new Date(l.entry_time))/60000):l.loading_duration;
+      return`<tr><td>${l.drivers?.profiles?.name||'—'}</td><td>${l.drivers?.vehicle||'—'}</td><td>${l.docks?.name||'—'}</td><td>${fmtDur(l.wait_duration)}</td><td>${fmtTimeShort(l.entry_time)}</td><td>${fmtDur(dur)}</td><td>${badgeHtml(l.status)}</td></tr>`;
+    }).join('');
+    if(allLogs.length>50) tb.innerHTML+=`<tr><td colspan="7" style="text-align:center;color:var(--muted);font-size:.72rem;padding:.5rem">… et ${allLogs.length-50} autres. <a href="#" onclick="goTo('admin-logs')" style="color:var(--accent)">Voir tout</a></td></tr>`;
+  }
+
+  // Dock activity
+  const dockMap={};
+  allLogs.forEach(l=>{
+    const name=l.docks?.name||'—';
+    dockMap[name]=(dockMap[name]||0)+1;
+  });
+  const maxDock=Math.max(...Object.values(dockMap),1);
+  const dockHtml=Object.entries(dockMap).sort((a,b)=>b[1]-a[1]).map(([name,count])=>`
+    <div class="dock-pill ${count>0?'active':''}">
+      <div class="dock-pill-name">${name}</div>
+      <div class="dock-pill-bar"><div class="dock-pill-fill" style="width:${Math.round(count/maxDock*100)}%"></div></div>
+      <div class="dock-pill-count">${count} passages</div>
+    </div>`).join('');
+  document.getElementById('admin-dock-activity').innerHTML=dockHtml||'<div style="color:var(--muted);font-size:.75rem">Aucune activité</div>';
+
+  // Vehicle breakdown
+  const vehMap={};
+  allLogs.forEach(l=>{const v=l.drivers?.vehicle||'Autre';vehMap[v]=(vehMap[v]||0)+1;});
+  const vehColors={'CAM-SOLO':'#00e5a0','REMQ':'#0066ff','CANTE':'#ffaa00','DUCATO':'#ff4455'};
+  const vehHtml=Object.entries(vehMap).map(([v,c])=>`
+    <div class="veh-item">
+      <div class="veh-item-val" style="color:${vehColors[v]||'#a07aff'}">${c}</div>
+      <div class="veh-item-lbl">${v}</div>
+    </div>`).join('');
+  document.getElementById('admin-veh-breakdown').innerHTML=vehHtml||'<div style="color:var(--muted);font-size:.75rem">—</div>';
 }
 
 // ============ ADMIN LOGS ============
@@ -1133,162 +1317,254 @@ async function addDock(){
   document.getElementById('new-dock-name').value='';showToast('Dock ajouté');renderAdminDocks();
 }
 
-// ============ ADMIN PLANNING ============
-async function renderAdminPlanning() {
-  // 1) Remplir la liste des chauffeurs dans le formulaire (si vide)
-  const { data: drivers } = await supabase.from('drivers').select('id,vehicle,profiles!drivers_user_id_fkey(name)');
-  const sel = document.getElementById('plan-driver');
-  if (sel && sel.options.length <= 1) {
-    drivers?.forEach(d => {
-      const o = document.createElement('option');
-      o.value = d.id;
-      o.textContent = (d.profiles?.name || '?') + ' — ' + d.vehicle;
-      o.dataset.vehicle = d.vehicle;
-      sel.appendChild(o);
-    });
-    sel.addEventListener('change', () => {
-      const opt = sel.options[sel.selectedIndex];
-      document.getElementById('plan-vehicle').value = opt.dataset.vehicle || '';
-    });
+// ============ ADMIN PLANNING (EXCEL-STYLE EDITABLE) ============
+let planningDriversCache = [];
+
+async function renderAdminPlanning(){
+  // Load drivers for the form
+  if(planningDriversCache.length === 0){
+    const{data:drivers}=await supabase.from('drivers').select('id,vehicle,profiles!drivers_user_id_fkey(name)');
+    planningDriversCache = drivers||[];
+    const sel=document.getElementById('plan-driver');
+    if(sel&&sel.options.length<=1){
+      planningDriversCache.forEach(d=>{
+        const o=document.createElement('option');
+        o.value=d.id;
+        o.textContent=(d.profiles?.name||'?')+' — '+d.vehicle;
+        o.dataset.vehicle=d.vehicle;
+        sel.appendChild(o);
+      });
+      sel.addEventListener('change',()=>{
+        const opt=sel.options[sel.selectedIndex];
+        document.getElementById('plan-vehicle').value=opt.dataset.vehicle||'';
+      });
+    }
   }
 
-  // 2) Récupérer les filtres
-  const dateF = document.getElementById('plan-filter-date')?.value || '';
-  const shiftF = document.getElementById('plan-filter-shift')?.value || '';
-  const search = (document.getElementById('plan-filter-search')?.value || '').toLowerCase();
+  const dateF=document.getElementById('plan-filter-date')?.value||'';
+  const shiftF=document.getElementById('plan-filter-shift')?.value||'';
+  const search=(document.getElementById('plan-filter-search')?.value||'').toLowerCase();
 
-  let q = supabase.from('planning').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name))').order('date', { ascending: false });
-  if (dateF) q = q.eq('date', dateF);
-  if (shiftF) q = q.eq('shift', shiftF);
-  const { data: plans } = await q;
+  let q=supabase.from('planning').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name))').order('date',{ascending:false});
+  if(dateF) q=q.eq('date',dateF);
+  if(shiftF) q=q.eq('shift',shiftF);
+  const{data:plans}=await q;
 
-  // Filtre recherche textuelle
-  let filtered = plans || [];
-  if (search) {
-    filtered = filtered.filter(p =>
-      (p.drivers?.profiles?.name || '').toLowerCase().includes(search) ||
-      (p.to_depot || '').toLowerCase().includes(search)
-    );
-  }
+  let filtered=plans||[];
+  if(search) filtered=filtered.filter(p=>
+    (p.drivers?.profiles?.name||'').toLowerCase().includes(search)||
+    (p.to_depot||'').toLowerCase().includes(search)
+  );
 
-  // 3) Récupérer tous les logs pour les dates concernées (pour joindre les temps)
-  let logsMap = new Map(); // key = "driverId_date"
-  if (filtered.length) {
-    const uniqueDates = [...new Set(filtered.map(p => p.date))];
-    const { data: logs } = await supabase
-      .from('logs')
-      .select('*, drivers(id)')
-      .in('waiting_time', uniqueDates.map(d => d + 'T%')); // approche simple
-    if (logs) {
-      logs.forEach(log => {
-        const driverId = log.drivers?.id;
-        if (!driverId) return;
-        const logDate = log.waiting_time?.slice(0,10);
-        if (logDate) {
-          const key = `${driverId}_${logDate}`;
-          logsMap.set(key, log);
+  // Fetch logs for these plans
+  let logsMap=new Map();
+  if(filtered.length){
+    const driverIds=[...new Set(filtered.map(p=>p.driver_id))];
+    const dates=[...new Set(filtered.map(p=>p.date))];
+    const{data:logs}=await supabase.from('logs').select('*').in('driver_id',driverIds);
+    if(logs){
+      logs.forEach(log=>{
+        const logDate=log.waiting_time?.slice(0,10)||log.entry_time?.slice(0,10);
+        if(logDate&&dates.includes(logDate)){
+          const key=`${log.driver_id}_${logDate}`;
+          if(!logsMap.has(key)) logsMap.set(key,log);
         }
       });
     }
   }
 
-  // 4) Construire le tableau enrichi
-  const container = document.getElementById('admin-planning-list');
-  if (!filtered.length) {
-    container.innerHTML = '<div class="card"><p class="no-data">Aucune mission trouvée.</p></div>';
+  // Stats pills
+  const total=filtered.length;
+  const withLog=filtered.filter(p=>logsMap.has(`${p.driver_id}_${p.date}`)).length;
+  const shift1=filtered.filter(p=>p.shift==='Shift 1').length;
+  const shift2=filtered.filter(p=>p.shift==='Shift 2').length;
+  document.getElementById('planning-stats-pills').innerHTML=`
+    <div class="stat-pill"><strong>${total}</strong> missions</div>
+    <div class="stat-pill"><strong style="color:var(--accent)">${withLog}</strong> réalisées</div>
+    <div class="stat-pill"><strong style="color:#00e5a0">${shift1}</strong> Shift 1</div>
+    <div class="stat-pill"><strong style="color:#ffaa00">${shift2}</strong> Shift 2</div>
+    <div class="stat-pill"><strong style="color:var(--muted)">${total-withLog}</strong> planifiées</div>
+  `;
+
+  if(!filtered.length){
+    document.getElementById('admin-planning-list').innerHTML='<div class="card"><p class="no-data">Aucune mission trouvée.</p></div>';
     return;
   }
 
-  // Statistiques rapides
-  const totalMissions = filtered.length;
-  const missionsWithLog = filtered.filter(p => {
-    const key = `${p.driver_id}_${p.date}`;
-    return logsMap.has(key);
-  }).length;
+  // Build Excel-like table with inline editing
+  let rows='';
+  filtered.forEach((p,idx)=>{
+    const driverName=p.drivers?.profiles?.name||'—';
+    const vehicle=p.drivers?.vehicle||p.vehicle||'—';
+    const fromDepot=p.from_depot==='USINE'?'USI':p.from_depot;
+    const toDepot=p.to_depot||'—';
+    const key=`${p.driver_id}_${p.date}`;
+    const log=logsMap.get(key);
 
-  let html = `
-    <div class="planning-stats">
-      <div class="stat-pill"><strong>📋 Total missions</strong> ${totalMissions}</div>
-      <div class="stat-pill"><strong>✅ Réalisées</strong> ${missionsWithLog}</div>
-      <div class="stat-pill"><strong>📅 Filtre</strong> ${dateF || 'Toutes dates'}</div>
-    </div>
-    <div class="card" style="overflow-x: auto; padding: 0;">
-      <table class="admin-planning-table">
+    const arrivalVal=log?.waiting_time?new Date(log.waiting_time).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+    const debVal=log?.entry_time?new Date(log.entry_time).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+    const finVal=log?.exit_time?new Date(log.exit_time).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+    const waitDur=log?fmtDur(log.wait_duration):'—';
+    const loadDur=log?fmtDur(log.loading_duration):'—';
+    const done=log?.status==='completed';
+
+    const shiftBadge=p.shift==='Shift 1'
+      ?'<span class="badge shift1">SHIFT01</span>'
+      :'<span class="badge shift2">SHIFT02</span>';
+
+    const dzlBadge=isDZL(p.to_depot)?'<span class="badge dzl" style="margin-left:.3rem">DZL</span>':'';
+
+    rows+=`<tr data-id="${p.id}" data-driver="${p.driver_id}" data-date="${p.date}">
+      <td class="row-num">${idx+1}</td>
+      <td>
+        <input class="cell-edit" type="date" value="${p.date}"
+          onchange="updatePlanField('${p.id}','date',this.value)">
+      </td>
+      <td>
+        <select class="cell-edit" onchange="updatePlanField('${p.id}','shift',this.value)">
+          <option value="Shift 1" ${p.shift==='Shift 1'?'selected':''}>SHIFT01</option>
+          <option value="Shift 2" ${p.shift==='Shift 2'?'selected':''}>SHIFT02</option>
+        </select>
+      </td>
+      <td>
+        <select class="cell-edit" onchange="updatePlanField('${p.id}','from_depot',this.value)">
+          <option value="USINE" ${p.from_depot==='USINE'?'selected':''}>USI</option>
+          <option value="DZL" ${p.from_depot==='DZL'?'selected':''}>DZL</option>
+        </select>
+      </td>
+      <td>
+        <input class="cell-edit" type="text" value="${p.to_depot||''}" style="min-width:90px"
+          onchange="updatePlanField('${p.id}','to_depot',this.value)">
+        ${dzlBadge}
+      </td>
+      <td style="font-size:.72rem">${vehicle}</td>
+      <td>
+        <select class="cell-edit" style="min-width:100px" onchange="updatePlanField('${p.id}','driver_id',this.value)">
+          ${planningDriversCache.map(d=>`<option value="${d.id}" ${d.id===p.driver_id?'selected':''}>${d.profiles?.name||'?'}</option>`).join('')}
+        </select>
+      </td>
+      <td>
+        <input class="cell-edit" type="text" value="${(p.note||'').replace(/"/g,'&quot;')}" style="min-width:80px"
+          onchange="updatePlanField('${p.id}','note',this.value)">
+      </td>
+      <td>
+        <input class="time-input" type="time" value="${arrivalVal}"
+          onchange="updateLogTimeField('${p.driver_id}','${p.date}','waiting_time',this.value,'${p.date}')">
+      </td>
+      <td>
+        <input class="time-input" type="time" value="${debVal}"
+          onchange="updateLogTimeField('${p.driver_id}','${p.date}','entry_time',this.value,'${p.date}')">
+      </td>
+      <td>
+        <input class="time-input" type="time" value="${finVal}"
+          onchange="updateLogTimeField('${p.driver_id}','${p.date}','exit_time',this.value,'${p.date}')">
+      </td>
+      <td class="dur-cell">${waitDur}</td>
+      <td class="dur-cell">${loadDur}</td>
+      <td>
+        <div class="check-cell">
+          <input type="checkbox" ${done?'checked':''}
+            onchange="togglePlanDone('${p.driver_id}','${p.date}',this.checked)">
+        </div>
+      </td>
+      <td>
+        <button class="btn sm danger" onclick="deletePlanning('${p.id}')" style="padding:.2rem .45rem;font-size:.65rem">✕</button>
+      </td>
+    </tr>`;
+  });
+
+  document.getElementById('admin-planning-list').innerHTML=`
+    <div class="planning-excel-wrap">
+      <table class="planning-excel">
         <thead>
           <tr>
-            <th>Date</th>
+            <th>#</th>
+            <th>Date ▼</th>
             <th>Shift</th>
-            <th>Du déplo</th>
-            <th>Au déplo</th>
-            <th>Véhicule</th>
-            <th>Chauffeur</th>
+            <th>Du Dépôt</th>
+            <th>Au Dépôt</th>
+            <th>Veh.</th>
+            <th>CHFR.</th>
             <th>Note</th>
-            <th>Hr arrivée dock</th>
-            <th>Hr début charg.</th>
-            <th>Hr fin charg.</th>
-            <th>Temps attente</th>
-            <th>Temps chargement</th>
-            <th>Statut</th>
-            <th style="width:50px"></th>
+            <th>Hr. D'ARRIVER Camion</th>
+            <th>HEURE DEB</th>
+            <th>HEURE FIN</th>
+            <th>TEMPS Charge</th>
+            <th>TEMPS D'attente</th>
+            <th>Oui/Non</th>
+            <th></th>
           </tr>
         </thead>
-        <tbody>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
   `;
+}
 
-  for (const p of filtered) {
-    const driverName = p.drivers?.profiles?.name || '—';
-    const vehicle = p.drivers?.vehicle || p.vehicle || '—';
-    const fromDepot = p.from_depot === 'USINE' ? 'USI' : p.from_depot;
-    const toDepot = p.to_depot || '—';
-    const note = p.note || '—';
+// Update a planning field inline
+async function updatePlanField(id, field, value){
+  const{error}=await supabase.from('planning').update({[field]:value}).eq('id',id);
+  if(error){showToast('Erreur: '+error.message,'err');return;}
+  showToast('✓ Modifié','ok');
+  // Refresh table after driver change to update vehicle column
+  if(field==='driver_id') renderAdminPlanning();
+}
 
-    // Récupérer le log associé
-    const key = `${p.driver_id}_${p.date}`;
-    const log = logsMap.get(key);
-    let arrival = '—', deb = '—', fin = '—', waitDur = '—', loadDur = '—', status = 'planifiée';
-    let statusClass = 'status-planned';
-    if (log) {
-      arrival = log.waiting_time ? fmtTime(log.waiting_time) : '—';
-      deb = log.entry_time ? fmtTime(log.entry_time) : '—';
-      fin = log.exit_time ? fmtTime(log.exit_time) : '—';
-      waitDur = fmtDur(log.wait_duration);
-      loadDur = fmtDur(log.loading_duration);
-      if (log.status === 'completed') {
-        status = 'terminée';
-        statusClass = 'status-done';
-      } else if (log.status === 'arrived') {
-        status = 'en cours';
-        statusClass = 'status-progress';
-      } else if (log.status === 'waiting') {
-        status = 'en attente';
-        statusClass = 'status-progress';
-      } else {
-        status = log.status;
-      }
+// Update a log time field from planning table
+async function updateLogTimeField(driverId, planDate, field, timeVal, date){
+  if(!timeVal) return;
+  const fullISO = new Date(date + 'T' + timeVal + ':00').toISOString();
+  // Find existing log
+  const{data:logs}=await supabase.from('logs').select('id,entry_time,waiting_time,exit_time,status')
+    .eq('driver_id',driverId)
+    .gte('waiting_time',date+'T00:00:00')
+    .lte('waiting_time',date+'T23:59:59')
+    .limit(1);
+
+  if(logs&&logs.length){
+    const log=logs[0];
+    const update={[field]:fullISO};
+    // Recalculate durations
+    if(field==='entry_time'&&log.waiting_time){
+      update.wait_duration=Math.round((new Date(fullISO)-new Date(log.waiting_time))/60000);
     }
-
-    html += `
-      <tr>
-        <td>${p.date}</td>
-        <td><span class="badge ${p.shift === 'Shift 1' ? 'shift1' : 'shift2'}" style="background:${p.shift === 'Shift 1' ? 'rgba(0,229,160,.15)' : 'rgba(255,170,0,.15)'}; color:${p.shift === 'Shift 1' ? 'var(--accent)' : 'var(--warn)'};">${p.shift === 'Shift 1' ? 'SHIFT01' : 'SHIFT02'}</span></td>
-        <td>${fromDepot}</td>
-        <td>${toDepot}${isDZL(p.to_depot) ? ' <span class="badge dzl" style="background:rgba(255,68,85,.15); color:var(--danger);">DZL</span>' : ''}</td>
-        <td>${vehicle}</td>
-        <td>${driverName}</td>
-        <td><span title="${note.replace(/"/g, '&quot;')}">${note.length > 20 ? note.slice(0,20)+'…' : note}</span></td>
-        <td><span class="time-value">${arrival}</span></td>
-        <td><span class="time-value">${deb}</span></td>
-        <td><span class="time-value">${fin}</span></td>
-        <td>${waitDur}</td>
-        <td>${loadDur}</td>
-        <td><span class="badge-status ${statusClass}">${status}</span></td>
-        <td><button class="btn sm danger" onclick="deletePlanning('${p.id}')" style="padding:0.2rem 0.5rem;">✕</button></td>
-      </tr>
-    `;
+    if(field==='exit_time'&&log.entry_time){
+      const entryT=field==='entry_time'?fullISO:log.entry_time;
+      update.loading_duration=Math.round((new Date(fullISO)-new Date(entryT))/60000);
+    }
+    const{error}=await supabase.from('logs').update(update).eq('id',log.id);
+    if(error){showToast('Erreur log: '+error.message,'err');return;}
+    showToast('✓ Heure mise à jour');
+    // Refresh to recalculate displayed durations
+    setTimeout(()=>renderAdminPlanning(),500);
+  } else {
+    showToast('Aucun log trouvé pour ce chauffeur à cette date','err');
   }
+}
 
-  html += `</tbody></table></div>`;
-  container.innerHTML = html;
+// Toggle the "Oui/Non" checkbox (marks log as completed or reverts)
+async function togglePlanDone(driverId, date, checked){
+  const{data:logs}=await supabase.from('logs').select('id')
+    .eq('driver_id',driverId)
+    .gte('waiting_time',date+'T00:00:00')
+    .lte('waiting_time',date+'T23:59:59')
+    .limit(1);
+  if(logs&&logs.length){
+    const newStatus=checked?'completed':'arrived';
+    const update={status:newStatus};
+    if(checked) update.exit_time=new Date().toISOString();
+    await supabase.from('logs').update(update).eq('id',logs[0].id);
+    showToast(checked?'✅ Marqué terminé':'↩️ Remis en cours');
+  } else {
+    showToast('Aucun log actif pour cette mission','err');
+  }
+}
+
+function clearPlanFilters(){
+  document.getElementById('plan-filter-date').value='';
+  document.getElementById('plan-filter-shift').value='';
+  document.getElementById('plan-filter-search').value='';
+  renderAdminPlanning();
 }
 
 async function createPlanning(){
@@ -1302,7 +1578,7 @@ async function createPlanning(){
   if(!date||!to||!driverId){showToast('Remplissez date, destination et chauffeur','err');return;}
   const{error}=await supabase.from('planning').insert([{date,shift,from_depot:from,to_depot:to,driver_id:driverId,vehicle,note,read_by_driver:false}]);
   if(error){showToast(error.message,'err');return;}
-  showToast('Mission créée - notification envoyée au chauffeur');
+  showToast('Mission créée');
   document.getElementById('plan-date').value='';
   document.getElementById('plan-to').value='';
   document.getElementById('plan-note').value='';
@@ -1324,15 +1600,17 @@ function showQRView(qrCode,title){
   document.getElementById('qr-view-modal').classList.add('open');
   generateQRInto('qr-view-container',qrCode,220);
 }
-function closeQRView(){const m=document.getElementById('qr-view-modal'); if(m) m.classList.remove('open');}
+function closeQRView(){document.getElementById('qr-view-modal').classList.remove('open');}
 
 // ============ EVENTS ============
-const sModal = document.getElementById('scanner-modal'); if(sModal) sModal.addEventListener('click',function(e){if(e.target===this)closeScanner();});
-const qvModal = document.getElementById('qr-view-modal'); if(qvModal) qvModal.addEventListener('click',function(e){if(e.target===this)closeQRView();});
-const mModal = document.getElementById('manual-op-modal'); if(mModal) mModal.addEventListener('click',function(e){if(e.target===this)closeManualOpModal();});
-const rRole = document.getElementById('reg-role'); 
-if(rRole) rRole.addEventListener('change',function(){document.getElementById('reg-vehicle-field').style.display=this.value==='driver'?'block':'none';});
-if(rRole) rRole.dispatchEvent(new Event('change'));
+document.getElementById('scanner-modal').addEventListener('click',function(e){if(e.target===this)closeScanner();});
+document.getElementById('qr-view-modal').addEventListener('click',function(e){if(e.target===this)closeQRView();});
+document.getElementById('manual-op-modal').addEventListener('click',function(e){if(e.target===this)closeManualOpModal();});
+const rRole=document.getElementById('reg-role');
+if(rRole){
+  rRole.addEventListener('change',function(){document.getElementById('reg-vehicle-field').style.display=this.value==='driver'?'block':'none';});
+  rRole.dispatchEvent(new Event('change'));
+}
 
 // ============ EXPOSE ============
 window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;window.quickLogin=quickLogin;
@@ -1344,6 +1622,8 @@ window.exportCSV=exportCSV;window.renderAdminLogs=renderAdminLogs;window.renderA
 window.downloadDriverCard=downloadDriverCard;window.downloadQRById=downloadQRById;
 window.openDriverScanner=openDriverScanner;window.driverSubmitManual=driverSubmitManual;window.driverResetScan=driverResetScan;
 window.createPlanning=createPlanning;window.deletePlanning=deletePlanning;window.renderAdminPlanning=renderAdminPlanning;
+window.updatePlanField=updatePlanField;window.updateLogTimeField=updateLogTimeField;
+window.togglePlanDone=togglePlanDone;window.clearPlanFilters=clearPlanFilters;
 
 // ============ SESSION ============
 const{data:{session}}=await supabase.auth.getSession();
