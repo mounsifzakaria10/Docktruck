@@ -1,7 +1,7 @@
 {
   "appId": "com.gastromixte.waretrack",
   "appName": "WareTrack",
-  "webDir": ".",
+  "webDir": "www",
   "server": {
     "androidScheme": "https",
     "cleartext": true
