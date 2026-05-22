@@ -1,9 +1,15 @@
 {
   "name": "waretrack",
   "version": "1.0.0",
+  "description": "WareTrack - Gastromixte Truck Tracking App",
+  "scripts": {
+    "build": "echo 'Static HTML app'"
+  },
   "dependencies": {
     "@capacitor/android": "^5.7.0",
-    "@capacitor/core": "^5.7.0"
+    "@capacitor/core": "^5.7.0",
+    "@capacitor/local-notifications": "^5.0.7",
+    "@capacitor/camera": "^5.0.9"
   },
   "devDependencies": {
     "@capacitor/cli": "^5.7.0"
