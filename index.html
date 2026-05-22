@@ -1549,7 +1549,7 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
         <div class="filter-bar-modern">
           <div class="field" style="margin:0;flex:1;min-width:140px">
             <label>📅 Date</label>
-            <input type="date" id="plan-filter-date" oninput="renderAdminPlanning()" style="width:100%">
+            <input type="date" id="plan-filter-date" oninput="debouncePlanning()" style="width:100%">
           </div>
           <div class="field" style="margin:0">
             <label>🕒 Shift</label>
@@ -1561,7 +1561,7 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
           </div>
           <div class="field" style="margin:0;flex:2;min-width:200px">
             <label>🔍 Chauffeur / destination</label>
-            <input type="text" id="plan-filter-search" placeholder="Nom ou destination..." oninput="renderAdminPlanning()" style="width:100%">
+            <input type="text" id="plan-filter-search" placeholder="Nom ou destination..." oninput="debouncePlanning()" style="width:100%">
           </div>
           <button class="btn sm secondary" onclick="clearPlanFilters()">Réinitialiser</button>
         </div>
@@ -2244,14 +2244,14 @@ async function renderAdminPlanning(){
   const dateF=document.getElementById('plan-filter-date')?.value||'';
   const shiftF=document.getElementById('plan-filter-shift')?.value||'';
   const search=(document.getElementById('plan-filter-search')?.value||'').toLowerCase();
-  let q=supabase.from('planning').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name))').order('date',{ascending:false}).order('shift');
+  let q=supabase.from('planning').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name))').order('date',{ascending:false}).order('shift',{ascending:true});
   if(dateF) q=q.eq('date',dateF);
   if(shiftF) q=q.eq('shift',shiftF);
   let {data:plans, error:planErr}=await q;
   // Fallback: if join failed, retry without drivers join
   if(planErr || !plans){
     console.warn('[Planning] Join error, retrying without FK join:', planErr?.message);
-    let q2=supabase.from('planning').select('*').order('date',{ascending:false}).order('shift');
+    let q2=supabase.from('planning').select('*').order('date',{ascending:false}).order('shift',{ascending:true});
     if(dateF) q2=q2.eq('date',dateF);
     if(shiftF) q2=q2.eq('shift',shiftF);
     const{data:plans2, error:err2}=await q2;
@@ -2523,6 +2523,8 @@ window.addDock=addDock;window.downloadQR=downloadQR;window.showQRView=showQRView
 window.exportCSV=exportCSV;window.renderAdminLogs=renderAdminLogs;window.renderAdminDashboard=renderAdminDashboard;
 window.downloadDriverCard=downloadDriverCard;window.downloadQRById=downloadQRById;
 window.openDriverScanner=openDriverScanner;window.driverSubmitManual=driverSubmitManual;window.driverResetScan=driverResetScan;
+let _planningDebounceTimer=null;
+function debouncePlanning(){clearTimeout(_planningDebounceTimer);_planningDebounceTimer=setTimeout(renderAdminPlanning,400);}
 window.createPlanning=createPlanning;window.deletePlanning=deletePlanning;window.renderAdminPlanning=renderAdminPlanning;
 window.updatePlanField=updatePlanField;window.updateLogTimeField=updateLogTimeField;
 window.togglePlanDone=togglePlanDone;window.clearPlanFilters=clearPlanFilters;
