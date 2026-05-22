@@ -2220,7 +2220,11 @@ let planningDriversCache = [];
 
 async function renderAdminPlanning(){
   if(planningDriversCache.length === 0){
-    const{data:drivers}=await supabase.from('drivers').select('id,vehicle,profiles!drivers_user_id_fkey(name)');
+    let{data:drivers,error:dErr}=await supabase.from('drivers').select('id,vehicle,profiles!drivers_user_id_fkey(name)');
+    if(dErr||!drivers){
+      const{data:drivers2}=await supabase.from('drivers').select('id,vehicle,user_id');
+      drivers=(drivers2||[]).map(d=>({...d,profiles:{name:d.user_id||'Chauffeur'}}));
+    }
     planningDriversCache = drivers||[];
     const sel=document.getElementById('plan-driver');
     if(sel&&sel.options.length<=1){
@@ -2243,7 +2247,24 @@ async function renderAdminPlanning(){
   let q=supabase.from('planning').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name))').order('date',{ascending:false}).order('shift');
   if(dateF) q=q.eq('date',dateF);
   if(shiftF) q=q.eq('shift',shiftF);
-  const{data:plans}=await q;
+  let {data:plans, error:planErr}=await q;
+  // Fallback: if join failed, retry without drivers join
+  if(planErr || !plans){
+    console.warn('[Planning] Join error, retrying without FK join:', planErr?.message);
+    let q2=supabase.from('planning').select('*').order('date',{ascending:false}).order('shift');
+    if(dateF) q2=q2.eq('date',dateF);
+    if(shiftF) q2=q2.eq('shift',shiftF);
+    const{data:plans2, error:err2}=await q2;
+    if(err2){
+      document.getElementById('admin-planning-list').innerHTML=`<div class="card"><p class="no-data" style="color:red">❌ Erreur Supabase: ${err2.message}</p></div>`;
+      return;
+    }
+    // Enrich with cached driver info
+    plans = (plans2||[]).map(p=>{
+      const d=planningDriversCache.find(x=>x.id===p.driver_id);
+      return {...p, drivers: d ? {vehicle:d.vehicle, profiles:d.profiles} : null};
+    });
+  }
   let filtered=plans||[];
   if(search) filtered=filtered.filter(p=>
     (p.drivers?.profiles?.name||'').toLowerCase().includes(search)||
@@ -2264,6 +2285,7 @@ async function renderAdminPlanning(){
       });
     }
   }
+  console.log('[Planning] plans loaded:', (plans||[]).length, '| filtered:', filtered.length);
   const total=filtered.length;
   const withLog=filtered.filter(p=>logsMap.has(`${p.driver_id}_${p.date}`)).length;
   const shift1=filtered.filter(p=>p.shift==='Shift 1').length;
@@ -2276,7 +2298,10 @@ async function renderAdminPlanning(){
     <div class="stat-pill"><strong style="color:var(--muted)">${total-withLog}</strong> planifiées</div>
   `;
   if(!filtered.length){
-    document.getElementById('admin-planning-list').innerHTML='<div class="card"><p class="no-data">Aucune mission trouvée.</p></div>';
+    const msg = total===0 && !dateF && !shiftF && !search
+      ? 'Aucune mission dans la base de données. Créez une mission ci-dessus.'
+      : 'Aucune mission trouvée pour ces filtres.';
+    document.getElementById('admin-planning-list').innerHTML=`<div class="card"><p class="no-data">${msg}</p></div>`;
     return;
   }
 
