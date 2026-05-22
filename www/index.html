@@ -7,6 +7,26 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// ===== CAPACITOR BRIDGE =====
+// Détecte si on tourne dans Capacitor (APK) ou navigateur web
+const isCapacitor = typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+// Charge les plugins Capacitor seulement si on est dans l'APK
+let CapCamera = null;
+let CapLocalNotif = null;
+async function initCapacitorPlugins(){
+  if(!isCapacitor) return;
+  try{
+    CapCamera = Capacitor.Plugins.Camera;
+    CapLocalNotif = Capacitor.Plugins.LocalNotifications;
+    // Demande la permission notifications
+    if(CapLocalNotif){
+      await CapLocalNotif.requestPermissions();
+    }
+  }catch(e){ console.warn('Capacitor plugins not available:', e); }
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
 <style>
@@ -1732,6 +1752,12 @@ async function loadUserData(user){
   if(profile.role==='driver'){
     const{data:drv}=await supabase.from('drivers').select('*').eq('user_id',user.id).single();
     currentDriver=drv;
+    // Démarre l'écoute des notifications de mission pour ce chauffeur
+    if(drv){
+      await initCapacitorPlugins();
+      await setupNotificationChannel();
+      startPlanningNotifListener(drv.id);
+    }
   }
   document.getElementById('login-screen').classList.remove('active');
   document.getElementById('app-screen').classList.add('active');
@@ -1865,10 +1891,42 @@ async function downloadDriverCard(){
 
 // ============ DRIVER SCAN DOCK ============
 let driverQrScanner=null;
-function openDriverScanner(){
+async function openDriverScanner(){
   const re=document.getElementById('driver-qr-reader');
   const me=document.getElementById('driver-scan-manual');
   re.style.display='block';me.style.display='block';
+  // Si on est dans l'APK Capacitor, utilise le plugin Camera natif
+  if(isCapacitor && CapCamera){
+    try{
+      re.innerHTML='<p style="color:var(--muted);font-size:.78rem;padding:1rem;text-align:center">📷 Ouverture caméra...</p>';
+      const photo = await CapCamera.getPhoto({
+        quality:90, allowEditing:false,
+        resultType:'base64', source:'CAMERA',
+        promptLabelPhoto:'Galerie', promptLabelPicture:'Caméra'
+      });
+      re.innerHTML='';
+      // Décode le QR depuis l'image capturée
+      const img = new Image();
+      img.onload = async function(){
+        const canvas = document.createElement('canvas');
+        canvas.width=img.width; canvas.height=img.height;
+        canvas.getContext('2d').drawImage(img,0,0);
+        try{
+          const scanner = new Html5Qrcode('driver-qr-reader');
+          const result = await scanner.scanFile(new File([await(await fetch('data:image/jpeg;base64,'+photo.base64String)).blob()],'qr.jpg'),true);
+          re.style.display='none';
+          await driverProcessDockQR(result);
+        }catch(e){
+          re.innerHTML='<p style="color:var(--warn);font-size:.78rem;padding:1rem">QR non détecté. Essayez la saisie manuelle.</p>';
+        }
+      };
+      img.src='data:image/jpeg;base64,'+photo.base64String;
+      return;
+    }catch(e){
+      if(e.message && e.message.includes('cancelled')){re.innerHTML='';return;}
+    }
+  }
+  // Fallback: navigateur web standard
   if(driverQrScanner){try{driverQrScanner.stop();}catch(e){}driverQrScanner=null;}
   re.innerHTML='';
   try{
@@ -1968,9 +2026,36 @@ function openOperatorScanner(){
   startCamera();
 }
 
-function startCamera(){
+async function startCamera(){
   if(opQrScanner){try{opQrScanner.stop();}catch(e){}opQrScanner=null;}
   const el=document.getElementById('qr-reader');el.innerHTML='';
+  // Capacitor natif
+  if(isCapacitor && CapCamera){
+    try{
+      el.innerHTML='<p style="color:var(--muted);font-size:.78rem;padding:1rem;text-align:center">📷 Ouverture caméra...</p>';
+      const photo = await CapCamera.getPhoto({
+        quality:90, allowEditing:false,
+        resultType:'base64', source:'CAMERA'
+      });
+      el.innerHTML='';
+      const img = new Image();
+      img.onload = async function(){
+        try{
+          const scanner = new Html5Qrcode('qr-reader');
+          const result = await scanner.scanFile(new File([await(await fetch('data:image/jpeg;base64,'+photo.base64String)).blob()],'qr.jpg'),true);
+          closeScanner();
+          await processOperatorScan(result);
+        }catch(e){
+          el.innerHTML='<p style="color:var(--warn);font-size:.78rem;padding:1rem">QR non détecté. Essayez la saisie manuelle.</p>';
+        }
+      };
+      img.src='data:image/jpeg;base64,'+photo.base64String;
+      return;
+    }catch(e){
+      if(e.message && e.message.includes('cancelled')){el.innerHTML='';return;}
+    }
+  }
+  // Fallback web
   try{
     opQrScanner=new Html5Qrcode('qr-reader');
     opQrScanner.start({facingMode:'environment'},{fps:10,qrbox:200},async(txt)=>{
@@ -2478,9 +2563,9 @@ async function createPlanning(){
   const vehicle=document.getElementById('plan-vehicle').value;
   const note=document.getElementById('plan-note').value.trim();
   if(!date||!to||!driverId){showToast('Remplissez date, destination et chauffeur','err');return;}
-  const{error}=await supabase.from('planning').insert([{date,shift,from_depot:from,to_depot:to,driver_id:driverId,vehicle,note,read_by_driver:false}]);
+  const{error,data:newMission}=await supabase.from('planning').insert([{date,shift,from_depot:from,to_depot:to,driver_id:driverId,vehicle,note,read_by_driver:false}]).select().single();
   if(error){showToast(error.message,'err');return;}
-  showToast('Mission créée ✅');
+  showToast('Mission créée ✅ — Notification envoyée au chauffeur');
   document.getElementById('plan-date').value='';
   document.getElementById('plan-to').value='';
   document.getElementById('plan-note').value='';
@@ -2538,3 +2623,55 @@ supabase.auth.onAuthStateChange((_,s)=>{if(s&&!currentUser)loadUserData(s.user);
 </script>
 </body>
 </html>
+
+// ===== NOTIFICATIONS SYSTÈME =====
+// Ecoute Supabase Realtime pour les nouvelles missions du chauffeur connecté
+let planningRealtimeChannel = null;
+async function startPlanningNotifListener(driverId){
+  if(planningRealtimeChannel) planningRealtimeChannel.unsubscribe();
+  planningRealtimeChannel = supabase
+    .channel('planning-notif-'+driverId)
+    .on('postgres_changes',{
+      event:'INSERT',
+      schema:'public',
+      table:'planning',
+      filter:'driver_id=eq.'+driverId
+    }, async(payload)=>{
+      const m = payload.new;
+      const msg = `📦 Nouvelle mission : ${m.shift||''} — ${m.from_depot||''} → ${m.to_depot||''} le ${m.date||''}`;
+      // Notification native sur APK
+      if(isCapacitor && CapLocalNotif){
+        try{
+          await CapLocalNotif.schedule({notifications:[{
+            title:'🚛 WareTrack — Nouvelle Mission',
+            body: msg,
+            id: Math.floor(Math.random()*100000),
+            schedule:{at: new Date(Date.now()+500)},
+            sound:'default',
+            smallIcon:'ic_launcher',
+            channelId:'missions'
+          }]});
+        }catch(e){console.warn('Notif error:',e);}
+      }
+      // Toast in-app toujours visible
+      showToast('📦 Nouvelle mission reçue !','info');
+      // Rafraîchit la liste missions du chauffeur
+      if(typeof loadDriverPlanning==='function') loadDriverPlanning();
+    })
+    .subscribe();
+}
+
+async function setupNotificationChannel(){
+  if(!isCapacitor || !CapLocalNotif) return;
+  try{
+    await CapLocalNotif.createChannel({
+      id:'missions',
+      name:'Missions WareTrack',
+      importance:5,
+      description:'Notifications de nouvelles missions',
+      sound:'default',
+      vibration:true,
+      lights:true
+    });
+  }catch(e){}
+}
