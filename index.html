@@ -8,1189 +8,285 @@
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
-
 <style>
-/* ===== GASTROMIXTE PALETTE ===== */
 :root {
-  --sky:       #5BC8F5;
-  --sky-dark:  #3AADDF;
-  --sky-light: #E8F7FD;
-  --green:     #27AE60;
-  --green-dark:#1a7a2e;
-  --green-mid: #2ECC71;
-  --green-pale:#E8F7EE;
-  --navy:      #1a3c6e;
-  --navy-light:#2a5298;
-  --sun:       #F5D020;
-  --sun-dark:  #e6c200;
-  --hill:      #145a24;
-  --bg:        #F4FAF6;
-  --surface:   #FFFFFF;
-  --surface2:  #F0F7F2;
-  --border:    #C8E6D0;
-  --text:      #1a2e1e;
-  --text2:     #3d5a47;
-  --muted:     #7a9984;
-  --danger:    #E53E3E;
-  --warn:      #DD6B20;
-  --radius:    12px;
-  --shadow:    0 2px 16px rgba(27,110,60,.10);
-  --shadow-lg: 0 8px 40px rgba(27,110,60,.15);
-  --font-head: 'Nunito', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --sky:#5BC8F5;--sky-dark:#3AADDF;--sky-light:#E8F7FD;
+  --green:#27AE60;--green-dark:#1a7a2e;--green-mid:#2ECC71;--green-pale:#E8F7EE;
+  --navy:#1a3c6e;--navy-light:#2a5298;
+  --sun:#F5D020;--hill:#145a24;
+  --bg:#F4FAF6;--surface:#FFFFFF;--surface2:#F0F7F2;--border:#C8E6D0;
+  --text:#1a2e1e;--text2:#3d5a47;--muted:#7a9984;
+  --danger:#E53E3E;--warn:#DD6B20;
+  --radius:12px;--shadow:0 2px 16px rgba(27,110,60,.10);--shadow-lg:0 8px 40px rgba(27,110,60,.15);
+  --font-head:'Nunito',sans-serif;--font-mono:'IBM Plex Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-head);min-height:100vh;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+.demo-banner{position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#f5a623 0%,#f7b733 100%);color:#5a3800;font-family:var(--font-head);font-size:.78rem;font-weight:800;text-align:center;padding:.35rem 1rem;letter-spacing:.04em;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+.demo-banner span{font-weight:500;margin-left:.5rem;}
+body.has-demo-banner .screen{padding-top:30px;}
+
+.logo-3d-wrap{display:flex;align-items:center;gap:.75rem;cursor:default;user-select:none;}
+.logo-3d-icon{width:52px;height:52px;position:relative;animation:logo-float 3s ease-in-out infinite;filter:drop-shadow(0 6px 16px rgba(27,110,60,.35));}
+@keyframes logo-float{0%,100%{transform:translateY(0) rotateY(0deg);}25%{transform:translateY(-4px) rotateY(8deg);}75%{transform:translateY(-2px) rotateY(-5deg);}}
+.logo-3d-icon svg{width:100%;height:100%;}
+.logo-3d-text{display:flex;flex-direction:column;line-height:1;}
+.logo-3d-brand{font-family:var(--font-head);font-size:1.35rem;font-weight:900;letter-spacing:-.5px;color:var(--navy);}
+.logo-3d-brand span{color:var(--green);}
+.logo-3d-sub{font-size:.58rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:.1rem;}
+.login-logo-3d .logo-3d-icon{width:80px;height:80px;}
+.login-logo-3d .logo-3d-brand{font-size:2rem;}
+.login-logo-3d .logo-3d-sub{font-size:.68rem;}
+
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;flex-direction:column;}
+
+#login-screen{align-items:center;justify-content:center;padding:2rem;background:linear-gradient(160deg,#e8f7fd 0%,#e8f7ee 50%,#f0f0ff 100%);position:relative;overflow:hidden;}
+#login-screen::before{content:'';position:absolute;top:-120px;right:-120px;width:500px;height:500px;background:radial-gradient(circle,rgba(91,200,245,.18) 0%,transparent 65%);border-radius:50%;pointer-events:none;}
+#login-screen::after{content:'';position:absolute;bottom:-80px;left:-100px;width:450px;height:450px;background:radial-gradient(circle,rgba(39,174,96,.15) 0%,transparent 65%);border-radius:50%;pointer-events:none;}
+.login-decor{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.login-decor span{position:absolute;border-radius:50%;opacity:.12;animation:float-decor linear infinite;}
+@keyframes float-decor{0%{transform:translateY(0) scale(1);opacity:.12;}50%{transform:translateY(-30px) scale(1.1);opacity:.2;}100%{transform:translateY(0) scale(1);opacity:.12;}}
+.login-box{width:100%;max-width:440px;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border:1.5px solid rgba(39,174,96,.2);border-radius:24px;padding:2.5rem 2rem;position:relative;z-index:1;box-shadow:0 16px 60px rgba(27,110,60,.12),0 2px 8px rgba(91,200,245,.15);}
+.login-header{text-align:center;margin-bottom:2rem;}
+.login-tagline{font-size:.78rem;font-weight:600;color:var(--muted);margin-top:.5rem;letter-spacing:.04em;}
+
+.tabs{display:flex;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:1.5rem;padding:3px;gap:3px;}
+.tab-btn{flex:1;padding:.55rem;background:none;border:none;color:var(--muted);font-family:var(--font-head);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s;border-radius:9px;}
+.tab-btn.active{background:var(--green);color:#fff;box-shadow:0 2px 8px rgba(39,174,96,.35);}
+
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:.72rem;font-weight:700;color:var(--text2);margin-bottom:.4rem;letter-spacing:.04em;text-transform:uppercase;}
+.field input,.field select,.field textarea{width:100%;padding:.7rem 1rem;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-head);font-size:.88rem;font-weight:500;outline:none;transition:all .2s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green);background:#fff;box-shadow:0 0 0 3px rgba(39,174,96,.15);}
+.field textarea{resize:vertical;min-height:70px;}
+
+.btn{width:100%;padding:.8rem;background:linear-gradient(135deg,var(--green) 0%,var(--green-dark) 100%);color:#fff;border:none;border-radius:var(--radius);font-family:var(--font-head);font-size:.95rem;font-weight:800;cursor:pointer;transition:all .2s;letter-spacing:.02em;box-shadow:0 4px 16px rgba(39,174,96,.3);}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(39,174,96,.4);}
+.btn:active{transform:translateY(0);}
+.btn.secondary{background:none;color:var(--green);border:1.5px solid var(--green);box-shadow:none;}
+.btn.secondary:hover{background:var(--green-pale);}
+.btn.danger{background:linear-gradient(135deg,#E53E3E 0%,#C53030 100%);box-shadow:0 4px 16px rgba(229,62,62,.25);}
+.btn.sm{width:auto;padding:.42rem .9rem;font-size:.8rem;border-radius:8px;}
+.btn.navy-btn{background:linear-gradient(135deg,var(--navy-light) 0%,var(--navy) 100%);box-shadow:0 4px 16px rgba(26,60,110,.25);}
+.btn.warn-btn{background:linear-gradient(135deg,#ED8936 0%,var(--warn) 100%);}
+
+.msg{font-size:.78rem;margin-top:.75rem;padding:.65rem .9rem;border-radius:8px;display:none;font-weight:600;}
+.msg.error{background:#FFF5F5;color:var(--danger);border:1.5px solid rgba(229,62,62,.3);display:block;}
+.msg.success{background:var(--green-pale);color:var(--green-dark);border:1.5px solid rgba(39,174,96,.3);display:block;}
+.demo-zone{margin-top:1.5rem;padding-top:1.25rem;border-top:1.5px dashed var(--border);}
+.demo-label{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.65rem;}
+.demo-btns{display:flex;gap:.5rem;flex-wrap:wrap;}
+
+.app-layout{display:flex;min-height:100vh;}
+.sidebar{width:240px;flex-shrink:0;background:var(--surface);border-right:2px solid var(--border);display:flex;flex-direction:column;padding:1.25rem 0;position:fixed;top:0;left:0;height:100vh;z-index:100;box-shadow:2px 0 20px rgba(27,110,60,.06);}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--green) 0%,var(--sky) 60%,var(--sun) 100%);}
+.sidebar-logo{padding:.5rem 1.25rem 1.25rem;border-bottom:1.5px solid var(--border);margin-bottom:.75rem;}
+.sidebar-role{padding:0 1.25rem .75rem;font-size:.62rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.14em;}
+.nav-item{display:flex;align-items:center;gap:.75rem;padding:.65rem 1.25rem;font-size:.84rem;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;border-left:3px solid transparent;margin:.1rem .5rem .1rem 0;border-radius:0 10px 10px 0;}
+.nav-item:hover{color:var(--green-dark);background:var(--green-pale);}
+.nav-item.active{color:var(--green-dark);border-left-color:var(--green);background:linear-gradient(90deg,rgba(39,174,96,.12) 0%,transparent 100%);font-weight:800;}
+.nav-item svg{width:17px;height:17px;flex-shrink:0;}
+.sidebar-bottom{margin-top:auto;padding:1rem 1.25rem 0;border-top:1.5px solid var(--border);}
+.user-chip{font-size:.75rem;color:var(--muted);margin-bottom:.75rem;font-weight:500;}
+.user-chip strong{display:block;color:var(--text);font-size:.88rem;font-weight:800;}
+.main-content{margin-left:240px;flex:1;padding:2rem 2.25rem;min-height:100vh;background:var(--bg);}
+
+.page{display:none;}
+.page.active{display:block;animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.page-header{margin-bottom:2rem;}
+.page-title{font-size:1.65rem;font-weight:900;color:var(--text);letter-spacing:-.5px;line-height:1.1;}
+.page-sub{font-size:.82rem;font-weight:500;color:var(--muted);margin-top:.3rem;}
+.page-hero-accent{height:4px;background:linear-gradient(90deg,var(--green) 0%,var(--sky) 50%,var(--sun) 100%);border-radius:4px;margin-bottom:1.75rem;}
+
+.card{background:var(--surface);border:1.5px solid var(--border);border-radius:18px;padding:1.5rem;margin-bottom:1.25rem;box-shadow:var(--shadow);}
+.card-title{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:1rem;}
+
+.dash-hero{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;}
+.kpi-card{position:relative;border-radius:20px;padding:1.4rem 1.2rem;overflow:hidden;border:1.5px solid transparent;transition:transform .2s,box-shadow .2s;cursor:default;}
+.kpi-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);}
+.kpi-card.green{background:linear-gradient(135deg,#e8f7ee 0%,#d4f0e0 100%);border-color:rgba(39,174,96,.3);}
+.kpi-card.sky{background:linear-gradient(135deg,#e8f7fd 0%,#d0eefc 100%);border-color:rgba(91,200,245,.35);}
+.kpi-card.navy{background:linear-gradient(135deg,#e8edf5 0%,#d5e0f0 100%);border-color:rgba(26,60,110,.25);}
+.kpi-card.sun{background:linear-gradient(135deg,#fefce8 0%,#fdf3c0 100%);border-color:rgba(245,208,32,.4);}
+.kpi-card.hill{background:linear-gradient(135deg,#e4f2e8 0%,#cce6d4 100%);border-color:rgba(20,90,36,.25);}
+.kpi-card.warm{background:linear-gradient(135deg,#fff0e8 0%,#fde0cc 100%);border-color:rgba(221,107,32,.25);}
+.kpi-card::before{content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;border-radius:50%;opacity:.25;}
+.kpi-card.green::before{background:var(--green);}
+.kpi-card.sky::before{background:var(--sky);}
+.kpi-card.navy::before{background:var(--navy-light);}
+.kpi-card.sun::before{background:var(--sun);}
+.kpi-card.hill::before{background:var(--hill);}
+.kpi-card.warm::before{background:var(--warn);}
+.kpi-icon{font-size:1.5rem;margin-bottom:.55rem;display:block;}
+.kpi-val{font-family:var(--font-head);font-size:2.2rem;font-weight:900;line-height:1;margin-bottom:.3rem;}
+.kpi-card.green .kpi-val{color:var(--green-dark);}
+.kpi-card.sky .kpi-val{color:var(--sky-dark);}
+.kpi-card.navy .kpi-val{color:var(--navy);}
+.kpi-card.sun .kpi-val{color:#a08000;}
+.kpi-card.hill .kpi-val{color:var(--hill);}
+.kpi-card.warm .kpi-val{color:var(--warn);}
+.kpi-label{font-size:.7rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;}
+.kpi-trend{position:absolute;bottom:.75rem;right:.9rem;font-size:.62rem;font-weight:600;color:var(--muted);}
+
+.dash-row-3{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1.25rem;}
+.dock-activity{display:flex;flex-direction:column;gap:.5rem;}
+.dock-pill{display:flex;align-items:center;gap:.75rem;padding:.6rem .85rem;background:var(--surface2);border-radius:10px;border-left:3px solid var(--border);transition:all .2s;}
+.dock-pill.active{border-left-color:var(--green);background:var(--green-pale);}
+.dock-pill-name{font-size:.82rem;font-weight:700;flex:1;color:var(--text);}
+.dock-pill-count{font-size:.72rem;font-weight:600;color:var(--muted);}
+.dock-pill-bar{flex:2;height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.dock-pill-fill{height:100%;background:linear-gradient(90deg,var(--green-mid),var(--green-dark));border-radius:3px;transition:width .5s ease;}
+.veh-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;}
+.veh-item{background:var(--surface2);border-radius:10px;padding:.75rem;text-align:center;border:1.5px solid var(--border);}
+.veh-item-val{font-family:var(--font-head);font-size:1.4rem;font-weight:900;color:var(--navy);}
+.veh-item-lbl{font-size:.65rem;font-weight:700;color:var(--muted);margin-top:.2rem;}
+
+.badge{display:inline-block;padding:.22rem .65rem;border-radius:6px;font-size:.7rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;}
+.badge.waiting{background:#F0F4F8;color:#4A5568;border:1px solid #CBD5E0;}
+.badge.arrived{background:#EBF8FF;color:#2B6CB0;border:1px solid #BEE3F8;}
+.badge.completed{background:var(--green-pale);color:var(--green-dark);border:1px solid rgba(39,174,96,.4);}
+.badge.shift1{background:var(--green-pale);color:var(--green-dark);}
+.badge.shift2{background:#FFFAF0;color:var(--warn);}
+.badge.dzl{background:#EBF8FF;color:var(--navy);}
+
+.tbl-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+thead th{text-align:left;padding:.7rem 1rem;font-size:.67rem;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);border-bottom:2px solid var(--border);background:var(--surface2);}
+thead th:first-child{border-radius:8px 0 0 0;}
+thead th:last-child{border-radius:0 8px 0 0;}
+tbody tr{border-bottom:1px solid rgba(200,230,208,.6);transition:background .15s;}
+tbody tr:hover{background:var(--green-pale);}
+tbody td{padding:.75rem 1rem;font-weight:500;}
+.no-data{text-align:center;color:var(--muted);padding:3rem;font-size:.85rem;font-weight:600;}
+
+.filter-bar{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:center;}
+.filter-bar input,.filter-bar select{padding:.52rem .9rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-head);font-size:.8rem;font-weight:500;outline:none;transition:all .2s;}
+.filter-bar input{flex:1;min-width:160px;}
+.filter-bar input:focus,.filter-bar select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(39,174,96,.12);}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,60,110,.4);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center;padding:1rem;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1.5px solid var(--border);border-radius:24px;padding:2rem;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(26,60,110,.2);}
+.modal-title{font-family:var(--font-head);font-size:1.15rem;font-weight:900;color:var(--text);margin-bottom:1.25rem;}
+
+.divider{display:flex;align-items:center;gap:.75rem;margin:1rem 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1.5px;background:var(--border);}
+.divider span{font-size:.7rem;font-weight:800;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;}
+
+.profile-header{display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;}
+.avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--green-mid),var(--green-dark));display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-size:1.4rem;font-weight:900;color:#fff;flex-shrink:0;box-shadow:0 4px 16px rgba(39,174,96,.35);}
+.profile-info h2{font-family:var(--font-head);font-size:1.2rem;font-weight:900;color:var(--text);}
+.profile-info p{font-size:.8rem;color:var(--muted);margin-top:.25rem;font-weight:500;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;}
+.info-item label{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:block;margin-bottom:.3rem;}
+.info-item span{font-size:.88rem;font-weight:600;}
+
+.qr-card-photo{display:flex;justify-content:center;margin:.5rem 0;}
+.qr-card-inner{width:330px;background:linear-gradient(160deg,#e8f7ee 0%,#e8f7fd 50%,#fffce8 100%);border:2px solid rgba(39,174,96,.4);border-radius:24px;padding:1.5rem;box-shadow:0 16px 50px rgba(27,110,60,.15);position:relative;overflow:hidden;}
+.qr-card-inner::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;background:radial-gradient(circle,rgba(39,174,96,.1) 0%,transparent 70%);border-radius:50%;}
+.qr-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;}
+.qr-card-logo{font-family:var(--font-head);font-size:1rem;font-weight:900;color:var(--navy);}
+.qr-card-logo span{color:var(--green);}
+.qr-card-badge{font-size:.6rem;font-weight:800;letter-spacing:.12em;color:#fff;background:linear-gradient(135deg,var(--green),var(--green-dark));padding:.22rem .55rem;border-radius:6px;}
+.qr-card-name{font-family:var(--font-head);font-size:1.1rem;font-weight:900;color:var(--text);margin-bottom:.2rem;}
+.qr-card-vehicle{font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:1.25rem;}
+.qr-card-qr{display:flex;justify-content:center;margin-bottom:.75rem;}
+.qr-card-code{text-align:center;font-family:var(--font-mono);font-size:.58rem;color:var(--muted);margin-bottom:1rem;word-break:break-all;}
+.qr-card-footer{text-align:center;font-size:.65rem;font-weight:600;color:var(--muted);border-top:1.5px dashed var(--border);padding-top:.75rem;}
+.qr-white-bg canvas,.qr-white-bg img{border-radius:10px!important;border:4px solid #fff!important;box-shadow:0 2px 12px rgba(39,174,96,.2)!important;display:block!important;}
+
+.scan-info-box{background:var(--sky-light);border:1.5px solid rgba(91,200,245,.4);border-radius:14px;padding:1rem 1.25rem;font-size:.82rem;font-weight:500;color:var(--navy);line-height:1.8;margin-bottom:1.25rem;}
+.status-waiting-box{background:#FFFAF0;border:1.5px solid #FEEBC8;border-radius:12px;padding:1rem 1.25rem;font-size:.82rem;font-weight:500;color:#744210;line-height:1.7;}
+.status-active-box{background:var(--sky-light);border:1.5px solid rgba(91,200,245,.4);border-radius:12px;padding:1rem 1.25rem;font-size:.82rem;font-weight:500;color:var(--navy);line-height:1.7;}
+
+.planning-excel-wrap{overflow-x:auto;border-radius:12px;border:1.5px solid #2a4a7a;background:var(--surface);box-shadow:var(--shadow);}
+.planning-excel{width:100%;border-collapse:collapse;font-size:.76rem;min-width:1300px;}
+.planning-excel thead{position:sticky;top:0;z-index:10;}
+.planning-excel thead tr{background:linear-gradient(180deg,#2d4e8a 0%,#1a3c6e 100%);}
+.planning-excel thead th{background:transparent!important;color:#d9e8ff!important;font-size:.61rem!important;font-weight:700!important;letter-spacing:.05em!important;border-bottom:2px solid #3a5fa0!important;border-right:1px solid rgba(255,255,255,.12)!important;padding:.65rem .55rem!important;text-transform:uppercase!important;white-space:nowrap;}
+.planning-excel thead th:last-child{border-right:none!important;}
+.planning-excel tbody tr{border-bottom:1px solid rgba(200,230,208,.5);transition:background .12s;}
+.planning-excel tbody tr:nth-child(even){background:rgba(240,247,242,.45);}
+.planning-excel tbody tr:hover{background:var(--green-pale)!important;}
+.planning-excel tbody td{padding:.38rem .5rem;border-right:1px solid rgba(200,230,208,.4);vertical-align:middle;}
+.planning-excel tbody td:last-child{border-right:none;}
+.plan-shift-s1{background:#F5C518;color:#5a3e00;padding:.2rem .65rem;border-radius:5px;font-size:.68rem;font-weight:800;display:inline-block;white-space:nowrap;}
+.plan-shift-s2{background:#ED8936;color:#fff;padding:.2rem .65rem;border-radius:5px;font-size:.68rem;font-weight:800;display:inline-block;white-space:nowrap;}
+.plan-depot-usi{background:#FFE8E8;color:#B91C1C;border:1.5px solid rgba(185,28,28,.25);padding:.2rem .6rem;border-radius:5px;font-size:.7rem;font-weight:800;display:inline-block;white-space:nowrap;}
+.plan-depot-dzl{background:#DBEAFE;color:#1D4ED8;border:1.5px solid rgba(29,78,216,.25);padding:.2rem .6rem;border-radius:5px;font-size:.7rem;font-weight:800;display:inline-block;white-space:nowrap;}
+.plan-veh{font-weight:900;font-size:.75rem;color:var(--navy);white-space:nowrap;}
+.plan-time-cell{font-family:var(--font-mono);font-size:.72rem;color:var(--text2);font-weight:500;text-align:center;}
+.plan-hms{font-size:.59rem;color:var(--muted);text-align:center;margin-top:.06rem;font-family:var(--font-mono);line-height:1;}
+.planning-excel .cell-edit{background:none;border:none;color:var(--text);font-family:var(--font-head);font-size:.76rem;font-weight:500;width:100%;padding:.22rem .35rem;border-radius:6px;outline:none;transition:all .15s;}
+.planning-excel .cell-edit:focus{background:#fff;outline:1.5px solid var(--green);box-shadow:0 0 0 3px rgba(39,174,96,.12);}
+.planning-excel .time-input{font-family:var(--font-mono)!important;font-size:.68rem!important;width:82px!important;text-align:center!important;background:none!important;border:1px solid transparent!important;border-radius:4px!important;padding:.1rem .2rem!important;color:var(--text2)!important;outline:none!important;display:block;margin:0 auto;}
+.planning-excel .time-input:focus{background:#fff!important;border-color:var(--green)!important;}
+.check-cell{display:flex;justify-content:center;align-items:center;}
+.check-cell input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:var(--green);}
+.filter-bar-modern{background:var(--surface);padding:1rem;border-radius:16px;margin-bottom:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;border:1.5px solid var(--border);box-shadow:var(--shadow);}
+.planning-stats{display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;}
+.stat-pill{background:var(--surface);border-radius:40px;padding:.42rem 1rem;font-size:.77rem;font-weight:600;border:1.5px solid var(--border);box-shadow:var(--shadow);}
+.stat-pill strong{font-weight:900;color:var(--green-dark);margin-right:.35rem;}
+
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:linear-gradient(135deg,var(--green),var(--green-dark));color:#fff;padding:.8rem 1.3rem;border-radius:14px;font-size:.84rem;font-weight:700;z-index:9999;opacity:0;transform:translateY(12px);transition:all .3s;pointer-events:none;max-width:320px;box-shadow:0 8px 30px rgba(39,174,96,.35);}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.err{background:linear-gradient(135deg,#E53E3E,#C53030);}
+.toast.info{background:linear-gradient(135deg,var(--sky-dark),var(--navy));}
+
+.hamburger{display:none;}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:#E53E3E;margin-left:auto;flex-shrink:0;animation:pulse-dot 1.5s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.3);opacity:.7;}}
+.nav-backdrop{display:none;position:fixed;inset:0;background:rgba(26,60,110,.35);backdrop-filter:blur(2px);z-index:99;}
+.nav-backdrop.open{display:block;}
+.recent-ops-table{font-size:.79rem;}
+.recent-ops-table thead th{font-size:.63rem;padding:.55rem .7rem;}
+.recent-ops-table tbody td{padding:.6rem .7rem;}
+
+@media(max-width:700px){
+  .sidebar{transform:translateX(-100%);transition:transform .25s;}
+  .sidebar.open{transform:translateX(0);}
+  .main-content{margin-left:0;padding:1rem;}
+  .hamburger{display:flex;align-items:center;gap:.6rem;position:fixed;top:1rem;left:1rem;z-index:200;background:var(--surface);border:1.5px solid var(--border);padding:.5rem .85rem;border-radius:10px;font-size:.78rem;font-weight:700;cursor:pointer;color:var(--text);box-shadow:var(--shadow);}
+  .info-grid{grid-template-columns:1fr;}
+  .dash-hero{grid-template-columns:1fr 1fr;}
+  .dash-row-3{grid-template-columns:1fr;}
 }
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-head);
-  min-height: 100vh;
-}
-
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-/* ===== 3D LOGO ===== */
-.logo-3d-wrap {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  cursor: default;
-  user-select: none;
-}
-
-.logo-3d-icon {
-  width: 52px;
-  height: 52px;
-  position: relative;
-  animation: logo-float 3s ease-in-out infinite;
-  filter: drop-shadow(0 6px 16px rgba(27,110,60,.35));
-}
-
-@keyframes logo-float {
-  0%, 100% { transform: translateY(0) rotateY(0deg); }
-  25%       { transform: translateY(-4px) rotateY(8deg); }
-  75%       { transform: translateY(-2px) rotateY(-5deg); }
-}
-
-.logo-3d-icon svg { width: 100%; height: 100%; }
-
-.logo-3d-text { display: flex; flex-direction: column; line-height: 1; }
-
-.logo-3d-brand {
-  font-family: var(--font-head);
-  font-size: 1.35rem;
-  font-weight: 900;
-  letter-spacing: -.5px;
-  color: var(--navy);
-}
-
-.logo-3d-brand span { color: var(--green); }
-
-.logo-3d-sub {
-  font-size: .58rem;
-  font-weight: 700;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-top: .1rem;
-}
-
-.login-logo-3d .logo-3d-icon { width: 80px; height: 80px; }
-.login-logo-3d .logo-3d-brand { font-size: 2rem; }
-.login-logo-3d .logo-3d-sub { font-size: .68rem; }
-
-/* ===== SCREENS ===== */
-.screen { display: none; min-height: 100vh; }
-.screen.active { display: flex; flex-direction: column; }
-
-/* ===== LOGIN ===== */
-#login-screen {
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  background: linear-gradient(160deg, #e8f7fd 0%, #e8f7ee 50%, #f0f0ff 100%);
-  position: relative;
-  overflow: hidden;
-}
-
-#login-screen::before {
-  content: '';
-  position: absolute;
-  top: -120px; right: -120px;
-  width: 500px; height: 500px;
-  background: radial-gradient(circle, rgba(91,200,245,.18) 0%, transparent 65%);
-  border-radius: 50%;
-  pointer-events: none;
-}
-#login-screen::after {
-  content: '';
-  position: absolute;
-  bottom: -80px; left: -100px;
-  width: 450px; height: 450px;
-  background: radial-gradient(circle, rgba(39,174,96,.15) 0%, transparent 65%);
-  border-radius: 50%;
-  pointer-events: none;
-}
-
-.login-decor { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-
-.login-decor span {
-  position: absolute;
-  border-radius: 50%;
-  opacity: .12;
-  animation: float-decor linear infinite;
-}
-
-@keyframes float-decor {
-  0%   { transform: translateY(0) scale(1); opacity: .12; }
-  50%  { transform: translateY(-30px) scale(1.1); opacity: .2; }
-  100% { transform: translateY(0) scale(1); opacity: .12; }
-}
-
-.login-box {
-  width: 100%;
-  max-width: 440px;
-  background: rgba(255,255,255,.92);
-  backdrop-filter: blur(12px);
-  border: 1.5px solid rgba(39,174,96,.2);
-  border-radius: 24px;
-  padding: 2.5rem 2rem;
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 16px 60px rgba(27,110,60,.12), 0 2px 8px rgba(91,200,245,.15);
-}
-
-.login-header { text-align: center; margin-bottom: 2rem; }
-
-.login-tagline {
-  font-size: .78rem;
-  font-weight: 600;
-  color: var(--muted);
-  margin-top: .5rem;
-  letter-spacing: .04em;
-}
-
-/* ===== TABS ===== */
-.tabs {
-  display: flex;
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  margin-bottom: 1.5rem;
-  padding: 3px;
-  gap: 3px;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: .55rem;
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-family: var(--font-head);
-  font-size: .8rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all .2s;
-  border-radius: 9px;
-}
-
-.tab-btn.active {
-  background: var(--green);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(39,174,96,.35);
-}
-
-/* ===== FIELDS ===== */
-.field { margin-bottom: 1rem; }
-.field label {
-  display: block;
-  font-size: .72rem;
-  font-weight: 700;
-  color: var(--text2);
-  margin-bottom: .4rem;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-}
-
-.field input, .field select, .field textarea {
-  width: 100%;
-  padding: .7rem 1rem;
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-family: var(--font-head);
-  font-size: .88rem;
-  font-weight: 500;
-  outline: none;
-  transition: all .2s;
-}
-
-.field input:focus, .field select:focus, .field textarea:focus {
-  border-color: var(--green);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(39,174,96,.15);
-}
-
-.field select option { background: #fff; }
-.field textarea { resize: vertical; min-height: 70px; }
-
-/* ===== BUTTONS ===== */
-.btn {
-  width: 100%;
-  padding: .8rem;
-  background: linear-gradient(135deg, var(--green) 0%, var(--green-dark) 100%);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius);
-  font-family: var(--font-head);
-  font-size: .95rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: all .2s;
-  letter-spacing: .02em;
-  box-shadow: 0 4px 16px rgba(39,174,96,.3);
-}
-
-.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(39,174,96,.4); }
-.btn:active { transform: translateY(0); }
-
-.btn.secondary {
-  background: none;
-  color: var(--green);
-  border: 1.5px solid var(--green);
-  box-shadow: none;
-}
-.btn.secondary:hover { background: var(--green-pale); box-shadow: 0 2px 8px rgba(39,174,96,.15); }
-
-.btn.danger {
-  background: linear-gradient(135deg, #E53E3E 0%, #C53030 100%);
-  box-shadow: 0 4px 16px rgba(229,62,62,.25);
-}
-
-.btn.sm {
-  width: auto;
-  padding: .42rem .9rem;
-  font-size: .8rem;
-  border-radius: 8px;
-}
-
-.btn.navy-btn {
-  background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy) 100%);
-  box-shadow: 0 4px 16px rgba(26,60,110,.25);
-}
-
-.btn.warn-btn {
-  background: linear-gradient(135deg, #ED8936 0%, var(--warn) 100%);
-  box-shadow: 0 4px 16px rgba(221,107,32,.25);
-}
-
-/* ===== MESSAGES ===== */
-.msg {
-  font-size: .78rem;
-  margin-top: .75rem;
-  padding: .65rem .9rem;
-  border-radius: 8px;
-  display: none;
-  font-weight: 600;
-}
-
-.msg.error {
-  background: #FFF5F5;
-  color: var(--danger);
-  border: 1.5px solid rgba(229,62,62,.3);
-  display: block;
-}
-
-.msg.success {
-  background: var(--green-pale);
-  color: var(--green-dark);
-  border: 1.5px solid rgba(39,174,96,.3);
-  display: block;
-}
-
-.demo-zone {
-  margin-top: 1.5rem;
-  padding-top: 1.25rem;
-  border-top: 1.5px dashed var(--border);
-}
-
-.demo-label {
-  font-size: .68rem;
-  font-weight: 700;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  margin-bottom: .65rem;
-}
-
-.demo-btns { display: flex; gap: .5rem; flex-wrap: wrap; }
-
-/* ===== APP LAYOUT ===== */
-.app-layout { display: flex; min-height: 100vh; }
-
-.sidebar {
-  width: 240px;
-  flex-shrink: 0;
-  background: var(--surface);
-  border-right: 2px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  padding: 1.25rem 0;
-  position: fixed;
-  top: 0; left: 0;
-  height: 100vh;
-  z-index: 100;
-  box-shadow: 2px 0 20px rgba(27,110,60,.06);
-}
-
-.sidebar-logo {
-  padding: .5rem 1.25rem 1.25rem;
-  border-bottom: 1.5px solid var(--border);
-  margin-bottom: .75rem;
-}
-
-.sidebar-role {
-  padding: 0 1.25rem .75rem;
-  font-size: .62rem;
-  font-weight: 800;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .14em;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  padding: .65rem 1.25rem;
-  font-size: .84rem;
-  font-weight: 600;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all .15s;
-  border-left: 3px solid transparent;
-  margin: .1rem .5rem .1rem 0;
-  border-radius: 0 10px 10px 0;
-}
-
-.nav-item:hover { color: var(--green-dark); background: var(--green-pale); }
-
-.nav-item.active {
-  color: var(--green-dark);
-  border-left-color: var(--green);
-  background: linear-gradient(90deg, rgba(39,174,96,.12) 0%, transparent 100%);
-  font-weight: 800;
-}
-
-.nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
-
-.sidebar-bottom {
-  margin-top: auto;
-  padding: 1rem 1.25rem 0;
-  border-top: 1.5px solid var(--border);
-}
-
-.user-chip { font-size: .75rem; color: var(--muted); margin-bottom: .75rem; font-weight: 500; }
-.user-chip strong { display: block; color: var(--text); font-size: .88rem; font-weight: 800; }
-
-.main-content {
-  margin-left: 240px;
-  flex: 1;
-  padding: 2rem 2.25rem;
-  min-height: 100vh;
-  background: var(--bg);
-}
-
-/* ===== PAGES ===== */
-.page { display: none; }
-.page.active { display: block; animation: fadeIn .25s ease; }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.page-header { margin-bottom: 2rem; }
-
-.page-title {
-  font-size: 1.65rem;
-  font-weight: 900;
-  color: var(--text);
-  letter-spacing: -.5px;
-  line-height: 1.1;
-}
-
-.page-sub { font-size: .82rem; font-weight: 500; color: var(--muted); margin-top: .3rem; }
-
-/* ===== CARDS ===== */
-.card {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 18px;
-  padding: 1.5rem;
-  margin-bottom: 1.25rem;
-  box-shadow: var(--shadow);
-}
-
-.card-title {
-  font-size: .72rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .12em;
-  color: var(--muted);
-  margin-bottom: 1rem;
-}
-
-/* ===== DASHBOARD KPIs ===== */
-.dash-hero {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.kpi-card {
-  position: relative;
-  border-radius: 20px;
-  padding: 1.4rem 1.2rem;
-  overflow: hidden;
-  border: 1.5px solid transparent;
-  transition: transform .2s, box-shadow .2s;
-  cursor: default;
-}
-
-.kpi-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-
-.kpi-card.green { background: linear-gradient(135deg, #e8f7ee 0%, #d4f0e0 100%); border-color: rgba(39,174,96,.3); }
-.kpi-card.sky   { background: linear-gradient(135deg, #e8f7fd 0%, #d0eefc 100%); border-color: rgba(91,200,245,.35); }
-.kpi-card.navy  { background: linear-gradient(135deg, #e8edf5 0%, #d5e0f0 100%); border-color: rgba(26,60,110,.25); }
-.kpi-card.sun   { background: linear-gradient(135deg, #fefce8 0%, #fdf3c0 100%); border-color: rgba(245,208,32,.4); }
-.kpi-card.hill  { background: linear-gradient(135deg, #e4f2e8 0%, #cce6d4 100%); border-color: rgba(20,90,36,.25); }
-.kpi-card.warm  { background: linear-gradient(135deg, #fff0e8 0%, #fde0cc 100%); border-color: rgba(221,107,32,.25); }
-
-.kpi-card::before {
-  content: '';
-  position: absolute;
-  top: -30px; right: -30px;
-  width: 100px; height: 100px;
-  border-radius: 50%;
-  opacity: .25;
-}
-.kpi-card.green::before  { background: var(--green); }
-.kpi-card.sky::before    { background: var(--sky); }
-.kpi-card.navy::before   { background: var(--navy-light); }
-.kpi-card.sun::before    { background: var(--sun); }
-.kpi-card.hill::before   { background: var(--hill); }
-.kpi-card.warm::before   { background: var(--warn); }
-
-.kpi-icon { font-size: 1.5rem; margin-bottom: .55rem; display: block; }
-
-.kpi-val { font-family: var(--font-head); font-size: 2.2rem; font-weight: 900; line-height: 1; margin-bottom: .3rem; }
-.kpi-card.green .kpi-val { color: var(--green-dark); }
-.kpi-card.sky .kpi-val   { color: var(--sky-dark); }
-.kpi-card.navy .kpi-val  { color: var(--navy); }
-.kpi-card.sun .kpi-val   { color: #a08000; }
-.kpi-card.hill .kpi-val  { color: var(--hill); }
-.kpi-card.warm .kpi-val  { color: var(--warn); }
-
-.kpi-label { font-size: .7rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .07em; }
-.kpi-trend { position: absolute; bottom: .75rem; right: .9rem; font-size: .62rem; font-weight: 600; color: var(--muted); }
-
-/* ===== LAYOUT GRIDS ===== */
-.dash-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
-.dash-row-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
-
-.dock-activity { display: flex; flex-direction: column; gap: .5rem; }
-
-.dock-pill {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  padding: .6rem .85rem;
-  background: var(--surface2);
-  border-radius: 10px;
-  border-left: 3px solid var(--border);
-  transition: all .2s;
-}
-
-.dock-pill.active { border-left-color: var(--green); background: var(--green-pale); }
-
-.dock-pill-name { font-size: .82rem; font-weight: 700; flex: 1; color: var(--text); }
-.dock-pill-count { font-size: .72rem; font-weight: 600; color: var(--muted); }
-
-.dock-pill-bar { flex: 2; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
-
-.dock-pill-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--green-mid), var(--green-dark));
-  border-radius: 3px;
-  transition: width .5s ease;
-}
-
-.veh-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-
-.veh-item {
-  background: var(--surface2);
-  border-radius: 10px;
-  padding: .75rem;
-  text-align: center;
-  border: 1.5px solid var(--border);
-}
-
-.veh-item-val { font-family: var(--font-head); font-size: 1.4rem; font-weight: 900; color: var(--navy); }
-.veh-item-lbl { font-size: .65rem; font-weight: 700; color: var(--muted); margin-top: .2rem; }
-
-/* ===== BADGES ===== */
-.badge {
-  display: inline-block;
-  padding: .22rem .65rem;
-  border-radius: 6px;
-  font-size: .7rem;
-  font-weight: 800;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-}
-.badge.waiting   { background: #F0F4F8; color: #4A5568; border: 1px solid #CBD5E0; }
-.badge.arrived   { background: #EBF8FF; color: #2B6CB0; border: 1px solid #BEE3F8; }
-.badge.loading   { background: #FFFAF0; color: #C05621; border: 1px solid #FEEBC8; }
-.badge.completed { background: var(--green-pale); color: var(--green-dark); border: 1px solid rgba(39,174,96,.4); }
-.badge.shift1    { background: var(--green-pale); color: var(--green-dark); }
-.badge.shift2    { background: #FFFAF0; color: var(--warn); }
-.badge.dzl       { background: #EBF8FF; color: var(--navy); }
-
-/* ===== TABLE ===== */
-.tbl-wrap { overflow-x: auto; }
-
-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
-
-thead th {
-  text-align: left;
-  padding: .7rem 1rem;
-  font-size: .67rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .09em;
-  color: var(--muted);
-  border-bottom: 2px solid var(--border);
-  background: var(--surface2);
-}
-
-thead th:first-child { border-radius: 8px 0 0 0; }
-thead th:last-child  { border-radius: 0 8px 0 0; }
-
-tbody tr { border-bottom: 1px solid rgba(200,230,208,.6); transition: background .15s; }
-tbody tr:hover { background: var(--green-pale); }
-tbody td { padding: .75rem 1rem; font-weight: 500; }
-
-.no-data { text-align: center; color: var(--muted); padding: 3rem; font-size: .85rem; font-weight: 600; }
-
-/* ===== FILTER BAR ===== */
-.filter-bar {
-  display: flex;
-  gap: .75rem;
-  flex-wrap: wrap;
-  margin-bottom: 1.25rem;
-  align-items: center;
-}
-
-.filter-bar input, .filter-bar select {
-  padding: .52rem .9rem;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--text);
-  font-family: var(--font-head);
-  font-size: .8rem;
-  font-weight: 500;
-  outline: none;
-  transition: all .2s;
-}
-
-.filter-bar input { flex: 1; min-width: 160px; }
-.filter-bar input:focus, .filter-bar select:focus {
-  border-color: var(--green);
-  box-shadow: 0 0 0 3px rgba(39,174,96,.12);
-}
-
-/* ===== MODALS ===== */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(26,60,110,.4);
-  backdrop-filter: blur(4px);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.modal-overlay.open { display: flex; }
-
-.modal {
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 24px;
-  padding: 2rem;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 24px 80px rgba(26,60,110,.2);
-}
-
-.modal-title {
-  font-family: var(--font-head);
-  font-size: 1.15rem;
-  font-weight: 900;
-  color: var(--text);
-  margin-bottom: 1.25rem;
-}
-
-/* ===== DIVIDER ===== */
-.divider { display: flex; align-items: center; gap: .75rem; margin: 1rem 0; }
-
-.divider::before, .divider::after { content: ''; flex: 1; height: 1.5px; background: var(--border); }
-
-.divider span {
-  font-size: .7rem;
-  font-weight: 800;
-  color: var(--muted);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
-
-/* ===== PROFILE ===== */
-.profile-header { display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; }
-
-.avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--green-mid), var(--green-dark));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-head);
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: #fff;
-  flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(39,174,96,.35);
-}
-
-.profile-info h2 { font-family: var(--font-head); font-size: 1.2rem; font-weight: 900; color: var(--text); }
-.profile-info p { font-size: .8rem; color: var(--muted); margin-top: .25rem; font-weight: 500; }
-
-.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem; }
-
-.info-item label {
-  font-size: .65rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .1em;
-  color: var(--muted);
-  display: block;
-  margin-bottom: .3rem;
-}
-
-.info-item span { font-size: .88rem; font-weight: 600; }
-
-/* ===== QR CARD ===== */
-.qr-card-photo { display: flex; justify-content: center; margin: .5rem 0; }
-
-.qr-card-inner {
-  width: 330px;
-  background: linear-gradient(160deg, #e8f7ee 0%, #e8f7fd 50%, #fffce8 100%);
-  border: 2px solid rgba(39,174,96,.4);
-  border-radius: 24px;
-  padding: 1.5rem;
-  box-shadow: 0 16px 50px rgba(27,110,60,.15), 0 2px 8px rgba(91,200,245,.1);
-  position: relative;
-  overflow: hidden;
-}
-
-.qr-card-inner::before {
-  content: '';
-  position: absolute;
-  top: -60px; right: -60px;
-  width: 200px; height: 200px;
-  background: radial-gradient(circle, rgba(39,174,96,.1) 0%, transparent 70%);
-  border-radius: 50%;
-}
-
-.qr-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-
-.qr-card-logo { font-family: var(--font-head); font-size: 1rem; font-weight: 900; color: var(--navy); }
-.qr-card-logo span { color: var(--green); }
-
-.qr-card-badge {
-  font-size: .6rem;
-  font-weight: 800;
-  letter-spacing: .12em;
-  color: #fff;
-  background: linear-gradient(135deg, var(--green), var(--green-dark));
-  padding: .22rem .55rem;
-  border-radius: 6px;
-}
-
-.qr-card-name { font-family: var(--font-head); font-size: 1.1rem; font-weight: 900; color: var(--text); margin-bottom: .2rem; }
-.qr-card-vehicle { font-size: .72rem; font-weight: 600; color: var(--muted); margin-bottom: 1.25rem; }
-.qr-card-qr { display: flex; justify-content: center; margin-bottom: .75rem; }
-
-.qr-card-code {
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: .58rem;
-  color: var(--muted);
-  margin-bottom: 1rem;
-  word-break: break-all;
-}
-
-.qr-card-footer {
-  text-align: center;
-  font-size: .65rem;
-  font-weight: 600;
-  color: var(--muted);
-  border-top: 1.5px dashed var(--border);
-  padding-top: .75rem;
-}
-
-.qr-white-bg canvas, .qr-white-bg img {
-  border-radius: 10px !important;
-  border: 4px solid #fff !important;
-  box-shadow: 0 2px 12px rgba(39,174,96,.2) !important;
-  display: block !important;
-}
-
-/* ===== SCAN STEPS ===== */
-.scan-step-box { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
-
-.scan-step {
-  flex: 1;
-  min-width: 180px;
-  background: var(--surface2);
-  border: 1.5px solid var(--border);
-  border-radius: 14px;
-  padding: 1.25rem;
-  text-align: center;
-}
-
-.scan-step.done { border-color: var(--green); background: var(--green-pale); }
-
-.step-num {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: .8rem;
-  font-weight: 800;
-  margin: 0 auto .75rem;
-}
-
-.scan-step.done .step-num { background: var(--green); color: #fff; }
-
-.step-label { font-size: .8rem; font-weight: 700; }
-.step-val { font-size: .7rem; color: var(--green-dark); font-weight: 600; margin-top: .25rem; word-break: break-all; }
-
-.status-waiting-box {
-  background: #FFFAF0;
-  border: 1.5px solid #FEEBC8;
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  font-size: .82rem;
-  font-weight: 500;
-  color: #744210;
-  line-height: 1.7;
-}
-
-.status-active-box {
-  background: var(--sky-light);
-  border: 1.5px solid rgba(91,200,245,.4);
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  font-size: .82rem;
-  font-weight: 500;
-  color: var(--navy);
-  line-height: 1.7;
-}
-
-/* ===== PLANNING EXCEL ===== */
-.planning-excel-wrap {
-  overflow-x: auto;
-  border-radius: 12px;
-  border: 1.5px solid #2a4a7a;
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.planning-excel {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: .76rem;
-  min-width: 1300px;
-}
-
-/* ===== PLANNING TABLE v2 - Excel-style matching target design ===== */
-.planning-excel thead {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.planning-excel thead tr {
-  background: linear-gradient(180deg, #2d4e8a 0%, #1a3c6e 100%);
-}
-.planning-excel thead th {
-  background: transparent !important;
-  color: #d9e8ff !important;
-  font-size: .61rem !important;
-  font-weight: 700 !important;
-  letter-spacing: .05em !important;
-  border-bottom: 2px solid #3a5fa0 !important;
-  border-right: 1px solid rgba(255,255,255,.12) !important;
-  padding: .65rem .55rem !important;
-  text-transform: uppercase !important;
-  line-height: 1.35 !important;
-  white-space: nowrap;
-}
-.planning-excel thead th:last-child { border-right: none !important; }
-
-.planning-excel tbody tr {
-  border-bottom: 1px solid rgba(200,230,208,.5);
-  transition: background .12s;
-}
-.planning-excel tbody tr:nth-child(even) { background: rgba(240,247,242,.45); }
-.planning-excel tbody tr:hover { background: var(--green-pale) !important; }
-
-.planning-excel tbody td {
-  padding: .38rem .5rem;
-  border-right: 1px solid rgba(200,230,208,.4);
-  vertical-align: middle;
-}
-.planning-excel tbody td:last-child { border-right: none; }
-
-/* Plan shift badges */
-.plan-shift-s1 {
-  background: #F5C518;
-  color: #5a3e00;
-  padding: .2rem .65rem;
-  border-radius: 5px;
-  font-size: .68rem;
-  font-weight: 800;
-  letter-spacing: .06em;
-  display: inline-block;
-  white-space: nowrap;
-}
-.plan-shift-s2 {
-  background: #ED8936;
-  color: #fff;
-  padding: .2rem .65rem;
-  border-radius: 5px;
-  font-size: .68rem;
-  font-weight: 800;
-  letter-spacing: .06em;
-  display: inline-block;
-  white-space: nowrap;
-}
-
-/* Plan depot badges */
-.plan-depot-usi {
-  background: #FFE8E8;
-  color: #B91C1C;
-  border: 1.5px solid rgba(185,28,28,.25);
-  padding: .2rem .6rem;
-  border-radius: 5px;
-  font-size: .7rem;
-  font-weight: 800;
-  display: inline-block;
-  white-space: nowrap;
-}
-.plan-depot-dzl {
-  background: #DBEAFE;
-  color: #1D4ED8;
-  border: 1.5px solid rgba(29,78,216,.25);
-  padding: .2rem .6rem;
-  border-radius: 5px;
-  font-size: .7rem;
-  font-weight: 800;
-  display: inline-block;
-  white-space: nowrap;
-}
-.plan-veh {
-  font-weight: 900;
-  font-size: .75rem;
-  color: var(--navy);
-  white-space: nowrap;
-}
-.plan-chfr {
-  font-weight: 900;
-  font-size: .78rem;
-  color: var(--text);
-  letter-spacing: .02em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.plan-time-cell {
-  font-family: var(--font-mono);
-  font-size: .72rem;
-  color: var(--text2);
-  font-weight: 500;
-  text-align: center;
-}
-.plan-hms {
-  font-size: .59rem;
-  color: var(--muted);
-  text-align: center;
-  margin-top: .06rem;
-  font-family: var(--font-mono);
-  line-height: 1;
-}
-
-.planning-excel .cell-edit {
-  background: none;
-  border: none;
-  color: var(--text);
-  font-family: var(--font-head);
-  font-size: .76rem;
-  font-weight: 500;
-  width: 100%;
-  padding: .22rem .35rem;
-  border-radius: 6px;
-  outline: none;
-  transition: all .15s;
-}
-.planning-excel .cell-edit:focus {
-  background: #fff;
-  outline: 1.5px solid var(--green);
-  box-shadow: 0 0 0 3px rgba(39,174,96,.12);
-}
-
-.planning-excel .time-input {
-  font-family: var(--font-mono) !important;
-  font-size: .68rem !important;
-  width: 82px !important;
-  text-align: center !important;
-  background: none !important;
-  border: 1px solid transparent !important;
-  border-radius: 4px !important;
-  padding: .1rem .2rem !important;
-  color: var(--text2) !important;
-  outline: none !important;
-  display: block;
-  margin: 0 auto;
-}
-.planning-excel .time-input:focus {
-  background: #fff !important;
-  border-color: var(--green) !important;
-  box-shadow: 0 0 0 2px rgba(39,174,96,.15) !important;
-}
-.planning-excel .time-input::-webkit-calendar-picker-indicator { opacity: .4; }
-
-.check-cell { display: flex; justify-content: center; align-items: center; }
-.check-cell input[type=checkbox] { width: 17px; height: 17px; cursor: pointer; accent-color: var(--green); }
-
-/* ===== FILTER BAR MODERN ===== */
-.filter-bar-modern {
-  background: var(--surface);
-  padding: 1rem;
-  border-radius: 16px;
-  margin-bottom: 1.5rem;
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  border: 1.5px solid var(--border);
-  box-shadow: var(--shadow);
-}
-
-.planning-stats { display: flex; gap: .75rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
-
-.stat-pill {
-  background: var(--surface);
-  border-radius: 40px;
-  padding: .42rem 1rem;
-  font-size: .77rem;
-  font-weight: 600;
-  border: 1.5px solid var(--border);
-  box-shadow: var(--shadow);
-}
-
-.stat-pill strong { font-weight: 900; color: var(--green-dark); margin-right: .35rem; }
-
-/* ===== TOAST ===== */
-.toast {
-  position: fixed;
-  bottom: 1.5rem; right: 1.5rem;
-  background: linear-gradient(135deg, var(--green), var(--green-dark));
-  color: #fff;
-  padding: .8rem 1.3rem;
-  border-radius: 14px;
-  font-size: .84rem;
-  font-weight: 700;
-  z-index: 9999;
-  opacity: 0;
-  transform: translateY(12px);
-  transition: all .3s;
-  pointer-events: none;
-  max-width: 320px;
-  box-shadow: 0 8px 30px rgba(39,174,96,.35);
-}
-
-.toast.show { opacity: 1; transform: translateY(0); }
-.toast.err  { background: linear-gradient(135deg, #E53E3E, #C53030); box-shadow: 0 8px 30px rgba(229,62,62,.3); }
-.toast.info { background: linear-gradient(135deg, var(--sky-dark), var(--navy)); box-shadow: 0 8px 30px rgba(91,200,245,.3); }
-
-/* ===== HAMBURGER ===== */
-.hamburger { display: none; }
-
-.notif-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: #E53E3E;
-  margin-left: auto;
-  flex-shrink: 0;
-  animation: pulse-dot 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50%       { transform: scale(1.3); opacity: .7; }
-}
-
-/* ===== SCAN INFO BOX ===== */
-.scan-info-box {
-  background: var(--sky-light);
-  border: 1.5px solid rgba(91,200,245,.4);
-  border-radius: 14px;
-  padding: 1rem 1.25rem;
-  font-size: .82rem;
-  font-weight: 500;
-  color: var(--navy);
-  line-height: 1.8;
-  margin-bottom: 1.25rem;
-}
-
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 700px) {
-  .sidebar { transform: translateX(-100%); transition: transform .25s; }
-  .sidebar.open { transform: translateX(0); }
-  .main-content { margin-left: 0; padding: 1rem; }
-  .hamburger {
-    display: flex;
-    align-items: center;
-    gap: .6rem;
-    position: fixed;
-    top: 1rem; left: 1rem;
-    z-index: 200;
-    background: var(--surface);
-    border: 1.5px solid var(--border);
-    padding: .5rem .85rem;
-    border-radius: 10px;
-    font-size: .78rem;
-    font-weight: 700;
-    cursor: pointer;
-    color: var(--text);
-    box-shadow: var(--shadow);
-  }
-  .info-grid { grid-template-columns: 1fr; }
-  .dash-hero { grid-template-columns: 1fr 1fr; }
-  .dash-row, .dash-row-3 { grid-template-columns: 1fr; }
-}
-
-.nav-backdrop {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(26,60,110,.35);
-  backdrop-filter: blur(2px);
-  z-index: 99;
-}
-.nav-backdrop.open { display: block; }
-
-.page-hero-accent {
-  height: 4px;
-  background: linear-gradient(90deg, var(--green) 0%, var(--sky) 50%, var(--sun) 100%);
-  border-radius: 4px;
-  margin-bottom: 1.75rem;
-}
-
-.sidebar::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, var(--green) 0%, var(--sky) 60%, var(--sun) 100%);
-}
-
-.recent-ops-table { font-size: .79rem; }
-.recent-ops-table thead th { font-size: .63rem; padding: .55rem .7rem; }
-.recent-ops-table tbody td { padding: .6rem .7rem; }
-
 </style>
 </head>
 <body>
 
-<!-- ===== SVG 3D LOGO TEMPLATE ===== -->
 <template id="tpl-logo-svg">
-  <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#5BC8F5"/>
-        <stop offset="100%" stop-color="#a8e4f8"/>
-      </linearGradient>
-      <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#27AE60"/>
-        <stop offset="100%" stop-color="#1a7a2e"/>
-      </linearGradient>
-      <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#2ECC71"/>
-        <stop offset="100%" stop-color="#1e6b2e"/>
-      </linearGradient>
-      <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#FFF176"/>
-        <stop offset="100%" stop-color="#F5D020"/>
-      </radialGradient>
-      <linearGradient id="boxSide" x1="0" y1="0" x2="1" y2="0">
-        <stop offset="0%" stop-color="#1a7a2e"/>
-        <stop offset="100%" stop-color="#145a24"/>
-      </linearGradient>
-      <linearGradient id="boxTop" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#5BC8F5"/>
-        <stop offset="100%" stop-color="#3AADDF"/>
-      </linearGradient>
-    </defs>
-    <rect x="1" y="1" width="50" height="50" rx="11" fill="url(#skyGrad)"/>
-    <polygon points="8,14 26,8 44,14 26,20" fill="url(#boxTop)" opacity=".9"/>
-    <polygon points="44,14 44,36 26,42 26,20" fill="url(#boxSide)"/>
-    <polygon points="8,14 26,20 26,42 8,36" fill="url(#hillFront)" opacity=".15"/>
-    <rect x="8" y="20" width="36" height="22" rx="4" fill="url(#skyGrad)"/>
-    <ellipse cx="26" cy="38" rx="20" ry="10" fill="url(#hillBack)" opacity=".7"/>
-    <path d="M8 42 Q14 30 22 35 Q28 28 36 33 Q42 28 44 42 Z" fill="url(#hillFront)"/>
-    <circle cx="32" cy="25" r="5" fill="url(#sunGrad)"/>
-    <g stroke="#F5D020" stroke-width="1.2" stroke-linecap="round" opacity=".8">
-      <line x1="32" y1="18" x2="32" y2="16"/>
-      <line x1="37" y1="20" x2="39" y2="19"/>
-      <line x1="39" y1="25" x2="41" y2="25"/>
-      <line x1="27" y1="20" x2="25" y2="19"/>
-      <line x1="25" y1="25" x2="23" y2="25"/>
-    </g>
-    <rect x="1" y="40" width="50" height="11" rx="0" fill="#1a3c6e"/>
-    <rect x="1" y="49" width="50" height="2" rx="1" fill="#1a3c6e"/>
-    <rect x="8" y="42" width="36" height="6" rx="3" fill="white" opacity=".15"/>
-    <rect x="1" y="1" width="50" height="50" rx="11" stroke="rgba(39,174,96,.5)" stroke-width="1.5" fill="none"/>
-  </svg>
+<svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BC8F5"/><stop offset="100%" stop-color="#a8e4f8"/></linearGradient>
+    <linearGradient id="hillFront" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#27AE60"/><stop offset="100%" stop-color="#1a7a2e"/></linearGradient>
+    <linearGradient id="hillBack" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2ECC71"/><stop offset="100%" stop-color="#1e6b2e"/></linearGradient>
+    <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#FFF176"/><stop offset="100%" stop-color="#F5D020"/></radialGradient>
+    <linearGradient id="boxSide" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#1a7a2e"/><stop offset="100%" stop-color="#145a24"/></linearGradient>
+    <linearGradient id="boxTop" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BC8F5"/><stop offset="100%" stop-color="#3AADDF"/></linearGradient>
+  </defs>
+  <rect x="1" y="1" width="50" height="50" rx="11" fill="url(#skyGrad)"/>
+  <polygon points="8,14 26,8 44,14 26,20" fill="url(#boxTop)" opacity=".9"/>
+  <polygon points="44,14 44,36 26,42 26,20" fill="url(#boxSide)"/>
+  <polygon points="8,14 26,20 26,42 8,36" fill="url(#hillFront)" opacity=".15"/>
+  <rect x="8" y="20" width="36" height="22" rx="4" fill="url(#skyGrad)"/>
+  <ellipse cx="26" cy="38" rx="20" ry="10" fill="url(#hillBack)" opacity=".7"/>
+  <path d="M8 42 Q14 30 22 35 Q28 28 36 33 Q42 28 44 42 Z" fill="url(#hillFront)"/>
+  <circle cx="32" cy="25" r="5" fill="url(#sunGrad)"/>
+  <g stroke="#F5D020" stroke-width="1.2" stroke-linecap="round" opacity=".8">
+    <line x1="32" y1="18" x2="32" y2="16"/><line x1="37" y1="20" x2="39" y2="19"/>
+    <line x1="39" y1="25" x2="41" y2="25"/><line x1="27" y1="20" x2="25" y2="19"/><line x1="25" y1="25" x2="23" y2="25"/>
+  </g>
+  <rect x="1" y="40" width="50" height="11" fill="#1a3c6e"/>
+  <rect x="8" y="42" width="36" height="6" rx="3" fill="white" opacity=".15"/>
+  <rect x="1" y="1" width="50" height="50" rx="11" stroke="rgba(39,174,96,.5)" stroke-width="1.5" fill="none"/>
+</svg>
 </template>
 
 <!-- LOGIN -->
@@ -1239,10 +335,8 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
       <div id="reg-vehicle-field" class="field">
         <label>Type de véhicule</label>
         <select id="reg-vehicle">
-          <option value="CAM-SOLO">CAMION-SOLO</option>
-          <option value="REMQ">REMORQUE</option>
-          <option value="CANTE">CANTE</option>
-          <option value="DUCATO">DUCATO</option>
+          <option value="CAM-SOLO">CAMION-SOLO</option><option value="REMQ">REMORQUE</option>
+          <option value="CANTE">CANTE</option><option value="DUCATO">DUCATO</option>
         </select>
       </div>
       <div id="reg-msg" class="msg"></div>
@@ -1261,7 +355,7 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
   <div class="app-layout">
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo">
-        <div class="logo-3d-wrap" id="sidebar-logo-wrap">
+        <div class="logo-3d-wrap">
           <div class="logo-3d-icon" id="sidebar-logo-icon"></div>
           <div class="logo-3d-text">
             <div class="logo-3d-brand">Ware<span>Track</span></div>
@@ -1272,40 +366,25 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
       <div class="sidebar-role" id="sidebar-role-label">— Rôle —</div>
       <div id="nav-items"></div>
       <div class="sidebar-bottom">
-        <div class="user-chip">
-          <strong id="sidebar-username">Utilisateur</strong>
-          <span id="sidebar-email-disp"></span>
-        </div>
+        <div class="user-chip"><strong id="sidebar-username">Utilisateur</strong><span id="sidebar-email-disp"></span></div>
         <button class="btn danger sm" onclick="doLogout()">Déconnexion</button>
       </div>
     </nav>
-
     <main class="main-content">
 
       <!-- DRIVER PROFILE -->
       <div id="page-driver-profile" class="page">
-        <div class="page-header">
-          <div class="page-title">Mon profil</div>
-          <div class="page-sub">Vos informations et votre QR code personnel</div>
-        </div>
+        <div class="page-header"><div class="page-title">Mon profil</div><div class="page-sub">Vos informations et votre QR code personnel</div></div>
         <div class="page-hero-accent"></div>
-        <div class="card">
-          <div class="profile-header" id="driver-profile-header"></div>
-          <div class="info-grid" id="driver-info-grid"></div>
-        </div>
+        <div class="card"><div class="profile-header" id="driver-profile-header"></div><div class="info-grid" id="driver-info-grid"></div></div>
         <div class="card">
           <div class="card-title">Mon QR Code personnel</div>
           <div class="qr-card-photo">
             <div class="qr-card-inner">
-              <div class="qr-card-header">
-                <div class="qr-card-logo">Ware<span>Track</span></div>
-                <div class="qr-card-badge">CHAUFFEUR</div>
-              </div>
+              <div class="qr-card-header"><div class="qr-card-logo">Ware<span>Track</span></div><div class="qr-card-badge">CHAUFFEUR</div></div>
               <div class="qr-card-name" id="qr-card-name">—</div>
               <div class="qr-card-vehicle" id="qr-card-vehicle">—</div>
-              <div class="qr-card-qr">
-                <div id="driver-qr-container" class="qr-white-bg" style="width:200px;height:200px;"></div>
-              </div>
+              <div class="qr-card-qr"><div id="driver-qr-container" class="qr-white-bg" style="width:200px;height:200px;"></div></div>
               <div class="qr-card-code" id="driver-qr-label">—</div>
               <div class="qr-card-footer">Présentez cette carte à l'opérateur du dock</div>
             </div>
@@ -1339,43 +418,26 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
             </div>
           </div>
         </div>
-        <div class="card">
-          <div class="card-title">Statut actuel</div>
-          <div id="driver-status-display" style="font-size:1rem;padding:.5rem 0"></div>
-        </div>
+        <div class="card"><div class="card-title">Statut actuel</div><div id="driver-status-display" style="font-size:1rem;padding:.5rem 0"></div></div>
       </div>
 
       <!-- DRIVER LOGS -->
       <div id="page-driver-logs" class="page">
-        <div class="page-header">
-          <div class="page-title">Mes passages</div>
-          <div class="page-sub">Historique de vos entrées et sorties au dock</div>
-        </div>
+        <div class="page-header"><div class="page-title">Mes passages</div><div class="page-sub">Historique de vos entrées et sorties au dock</div></div>
         <div class="page-hero-accent"></div>
-        <div class="card">
-          <div class="tbl-wrap">
-            <table><thead><tr><th>Dock</th><th>Attente</th><th>Entrée</th><th>Sortie</th><th>Durée charg.</th><th>Statut</th></tr></thead>
-            <tbody id="driver-logs-tbody"></tbody></table>
-          </div>
-        </div>
+        <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Dock</th><th>Attente</th><th>Entrée</th><th>Sortie</th><th>Durée charg.</th><th>Statut</th></tr></thead><tbody id="driver-logs-tbody"></tbody></table></div></div>
       </div>
 
       <!-- DRIVER PLANNING -->
       <div id="page-driver-planning" class="page">
-        <div class="page-header">
-          <div class="page-title">Mon planning</div>
-          <div class="page-sub">Vos missions assignées</div>
-        </div>
+        <div class="page-header"><div class="page-title">Mon planning</div><div class="page-sub">Vos missions assignées</div></div>
         <div class="page-hero-accent"></div>
         <div id="driver-planning-list"></div>
       </div>
 
       <!-- OPERATOR SCAN -->
       <div id="page-operator-scan" class="page">
-        <div class="page-header">
-          <div class="page-title">Scanner QR Chauffeur</div>
-          <div class="page-sub">1er scan = Entrée au dock · 2ème scan = Sortie (opération terminée)</div>
-        </div>
+        <div class="page-header"><div class="page-title">Scanner QR Chauffeur</div><div class="page-sub">1er scan = Entrée au dock · 2ème scan = Sortie</div></div>
         <div class="page-hero-accent"></div>
         <div class="scan-info-box">
           <strong>Logique de scan :</strong><br>
@@ -1388,39 +450,28 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
             <button class="btn sm secondary" onclick="openManualOpModal()">⌨️ Saisie manuelle</button>
           </div>
           <div id="op-scan-result" style="display:none;padding:1rem;background:var(--surface2);border-radius:12px;border:1.5px solid var(--border);margin-top:.75rem">
-            <div id="op-scan-text" style="font-size:.85rem;font-weight:600;margin-bottom:.5rem"></div>
+            <div id="op-scan-text" style="font-size:.85rem;font-weight:600;"></div>
           </div>
         </div>
         <div class="card">
           <div class="card-title">🚛 Camions actifs</div>
-          <div class="tbl-wrap">
-            <table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente depuis</th><th>Entrée</th><th>Statut</th></tr></thead>
-            <tbody id="operator-active-tbody"></tbody></table>
-          </div>
+          <div class="tbl-wrap"><table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente depuis</th><th>Entrée</th><th>Statut</th></tr></thead><tbody id="operator-active-tbody"></tbody></table></div>
         </div>
-        <div class="card">
-          <div class="card-title">QR Codes des docks</div>
-          <div id="dock-qr-list" style="display:flex;flex-wrap:wrap;gap:1rem"></div>
-        </div>
+        <div class="card"><div class="card-title">QR Codes des docks</div><div id="dock-qr-list" style="display:flex;flex-wrap:wrap;gap:1rem"></div></div>
       </div>
 
       <!-- ADMIN DASHBOARD -->
       <div id="page-admin-dashboard" class="page">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem">
-          <div class="page-header" style="margin-bottom:0">
-            <div class="page-title">Dashboard</div>
-            <div class="page-sub">Vue d'ensemble — KPIs opérationnels</div>
-          </div>
+          <div class="page-header" style="margin-bottom:0"><div class="page-title">Dashboard</div><div class="page-sub">Vue d'ensemble — KPIs opérationnels</div></div>
           <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
             <label style="font-size:.75rem;font-weight:700;color:var(--muted)">Période :</label>
             <select id="dash-period" onchange="renderAdminDashboard()" style="padding:.48rem .8rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-head);font-size:.8rem;font-weight:600;outline:none">
-              <option value="today">Aujourd'hui</option>
-              <option value="week">7 derniers jours</option>
-              <option value="month" selected>30 derniers jours</option>
-              <option value="all">Tout</option>
+              <option value="today">Aujourd'hui</option><option value="week">7 derniers jours</option>
+              <option value="month" selected>30 derniers jours</option><option value="all">Tout</option>
             </select>
             <input type="date" id="dash-from" style="padding:.48rem .8rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-head);font-size:.8rem;outline:none">
-            <input type="date" id="dash-to"   style="padding:.48rem .8rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-head);font-size:.8rem;outline:none">
+            <input type="date" id="dash-to" style="padding:.48rem .8rem;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);color:var(--text);font-family:var(--font-head);font-size:.8rem;outline:none">
             <button class="btn sm" onclick="renderAdminDashboard()">Appliquer</button>
           </div>
         </div>
@@ -1429,81 +480,43 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
         <div class="dash-row-3">
           <div class="card" style="margin-bottom:0">
             <div class="card-title">🚛 Toutes les opérations de la période</div>
-            <div class="tbl-wrap">
-              <table class="recent-ops-table">
-                <thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente</th><th>Entrée</th><th>Durée</th><th>Statut</th></tr></thead>
-                <tbody id="admin-all-ops-tbody"></tbody>
-              </table>
-            </div>
+            <div class="tbl-wrap"><table class="recent-ops-table"><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente</th><th>Entrée</th><th>Durée</th><th>Statut</th></tr></thead><tbody id="admin-all-ops-tbody"></tbody></table></div>
           </div>
           <div style="display:flex;flex-direction:column;gap:1rem">
-            <div class="card" style="margin-bottom:0">
-              <div class="card-title">📍 Activité par dock</div>
-              <div id="admin-dock-activity" class="dock-activity"></div>
-            </div>
-            <div class="card" style="margin-bottom:0">
-              <div class="card-title">🚚 Par type de véhicule</div>
-              <div id="admin-veh-breakdown" class="veh-grid"></div>
-            </div>
+            <div class="card" style="margin-bottom:0"><div class="card-title">📍 Activité par dock</div><div id="admin-dock-activity" class="dock-activity"></div></div>
+            <div class="card" style="margin-bottom:0"><div class="card-title">🚚 Par type de véhicule</div><div id="admin-veh-breakdown" class="veh-grid"></div></div>
           </div>
         </div>
       </div>
 
       <!-- ADMIN LOGS -->
       <div id="page-admin-logs" class="page">
-        <div class="page-header">
-          <div class="page-title">Tous les passages</div>
-          <div class="page-sub">Historique complet avec filtres et export</div>
-        </div>
+        <div class="page-header"><div class="page-title">Tous les passages</div><div class="page-sub">Historique complet avec filtres et export</div></div>
         <div class="page-hero-accent"></div>
         <div class="filter-bar">
           <input type="text" id="filter-search" placeholder="🔍 Recherche (nom, véhicule...)" oninput="renderAdminLogs()">
-          <select id="filter-status" onchange="renderAdminLogs()">
-            <option value="">Tous statuts</option>
-            <option value="waiting">En attente</option>
-            <option value="arrived">Entrée dock</option>
-            <option value="completed">Terminé</option>
-          </select>
+          <select id="filter-status" onchange="renderAdminLogs()"><option value="">Tous statuts</option><option value="waiting">En attente</option><option value="arrived">Entrée dock</option><option value="completed">Terminé</option></select>
           <input type="date" id="filter-date" onchange="renderAdminLogs()">
           <button class="btn sm" onclick="exportCSV()">📊 Export CSV</button>
         </div>
-        <div class="card">
-          <div class="tbl-wrap">
-            <table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente</th><th>Entrée</th><th>Sortie</th><th>T.Attente</th><th>T.Charg.</th><th>Statut</th></tr></thead>
-            <tbody id="admin-logs-tbody"></tbody></table>
-          </div>
-        </div>
+        <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Chauffeur</th><th>Véhicule</th><th>Dock</th><th>Attente</th><th>Entrée</th><th>Sortie</th><th>T.Attente</th><th>T.Charg.</th><th>Statut</th></tr></thead><tbody id="admin-logs-tbody"></tbody></table></div></div>
       </div>
 
       <!-- ADMIN CHAUFFEURS -->
       <div id="page-admin-drivers" class="page">
-        <div class="page-header">
-          <div class="page-title">Chauffeurs enregistrés</div>
-          <div class="page-sub">Tous les chauffeurs et leurs QR codes</div>
-        </div>
+        <div class="page-header"><div class="page-title">Chauffeurs enregistrés</div><div class="page-sub">Tous les chauffeurs et leurs QR codes</div></div>
         <div class="page-hero-accent"></div>
-        <div class="card">
-          <div class="tbl-wrap">
-            <table><thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Véhicule</th><th>Statut</th><th>QR</th></tr></thead>
-            <tbody id="admin-drivers-tbody"></tbody></table>
-          </div>
-        </div>
+        <div class="card"><div class="tbl-wrap"><table><thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Véhicule</th><th>Statut</th><th>QR</th></tr></thead><tbody id="admin-drivers-tbody"></tbody></table></div></div>
       </div>
 
       <!-- ADMIN DOCKS -->
       <div id="page-admin-docks" class="page">
-        <div class="page-header">
-          <div class="page-title">Gestion des docks</div>
-          <div class="page-sub">QR codes des docks de chargement</div>
-        </div>
+        <div class="page-header"><div class="page-title">Gestion des docks</div><div class="page-sub">QR codes des docks de chargement</div></div>
         <div class="page-hero-accent"></div>
         <div class="card" style="margin-bottom:1.25rem">
           <div class="card-title">Ajouter un dock</div>
           <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end">
-            <div class="field" style="flex:1;min-width:200px;margin:0">
-              <label>Nom du dock</label>
-              <input type="text" id="new-dock-name" placeholder="ex: Dock A — Zone 1">
-            </div>
+            <div class="field" style="flex:1;min-width:200px;margin:0"><label>Nom du dock</label><input type="text" id="new-dock-name" placeholder="ex: Dock A — Zone 1"></div>
             <button class="btn sm" onclick="addDock()">Ajouter</button>
           </div>
         </div>
@@ -1512,32 +525,16 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
 
       <!-- ADMIN PLANNING -->
       <div id="page-admin-planning" class="page">
-        <div class="page-header">
-          <div class="page-title">Planning de chargement</div>
-          <div class="page-sub">Gérez et assignez les missions aux chauffeurs — tableau modifiable en direct</div>
-        </div>
+        <div class="page-header"><div class="page-title">Planning de chargement</div><div class="page-sub">Gérez et assignez les missions aux chauffeurs</div></div>
         <div class="page-hero-accent"></div>
-
         <div class="card">
           <div class="card-title">➕ Créer une mission</div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1rem">
             <div class="field" style="margin:0"><label>Date</label><input type="date" id="plan-date"></div>
-            <div class="field" style="margin:0"><label>Shift</label>
-              <select id="plan-shift">
-                <option value="Shift 1">Shift 1</option>
-                <option value="Shift 2">Shift 2</option>
-              </select>
-            </div>
-            <div class="field" style="margin:0"><label>Du Dépôt</label>
-              <select id="plan-from">
-                <option value="USINE">USINE</option>
-                <option value="DZL">DZL</option>
-              </select>
-            </div>
+            <div class="field" style="margin:0"><label>Shift</label><select id="plan-shift"><option value="Shift 1">Shift 1</option><option value="Shift 2">Shift 2</option></select></div>
+            <div class="field" style="margin:0"><label>Du Dépôt</label><select id="plan-from"><option value="USINE">USINE</option><option value="DZL">DZL</option></select></div>
             <div class="field" style="margin:0"><label>Au Dépôt</label><input type="text" id="plan-to" placeholder="ex: DZL Casa, Usine Fès..."></div>
-            <div class="field" style="margin:0"><label>Chauffeur</label>
-              <select id="plan-driver"><option value="">— Sélectionner —</option></select>
-            </div>
+            <div class="field" style="margin:0"><label>Chauffeur</label><select id="plan-driver"><option value="">— Sélectionner —</option></select></div>
             <div class="field" style="margin:0"><label>Véhicule</label><input type="text" id="plan-vehicle" readonly style="background:var(--surface2);color:var(--muted)"></div>
           </div>
           <div style="display:grid;grid-template-columns:1fr auto;gap:.75rem;align-items:end">
@@ -1545,27 +542,12 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
             <button class="btn sm" onclick="createPlanning()" style="height:fit-content">➕ Créer</button>
           </div>
         </div>
-
         <div class="filter-bar-modern">
-          <div class="field" style="margin:0;flex:1;min-width:140px">
-            <label>📅 Date</label>
-            <input type="date" id="plan-filter-date" oninput="debouncePlanning()" style="width:100%">
-          </div>
-          <div class="field" style="margin:0">
-            <label>🕒 Shift</label>
-            <select id="plan-filter-shift" onchange="renderAdminPlanning()">
-              <option value="">Tous</option>
-              <option value="Shift 1">Shift 1</option>
-              <option value="Shift 2">Shift 2</option>
-            </select>
-          </div>
-          <div class="field" style="margin:0;flex:2;min-width:200px">
-            <label>🔍 Chauffeur / destination</label>
-            <input type="text" id="plan-filter-search" placeholder="Nom ou destination..." oninput="debouncePlanning()" style="width:100%">
-          </div>
+          <div class="field" style="margin:0;flex:1;min-width:140px"><label>📅 Date</label><input type="date" id="plan-filter-date" oninput="debouncePlanning()" style="width:100%"></div>
+          <div class="field" style="margin:0"><label>🕒 Shift</label><select id="plan-filter-shift" onchange="renderAdminPlanning()"><option value="">Tous</option><option value="Shift 1">Shift 1</option><option value="Shift 2">Shift 2</option></select></div>
+          <div class="field" style="margin:0;flex:2;min-width:200px"><label>🔍 Chauffeur / destination</label><input type="text" id="plan-filter-search" placeholder="Nom ou destination..." oninput="debouncePlanning()" style="width:100%"></div>
           <button class="btn sm secondary" onclick="clearPlanFilters()">Réinitialiser</button>
         </div>
-
         <div class="planning-stats" id="planning-stats-pills"></div>
         <div id="admin-planning-list"></div>
       </div>
@@ -1587,7 +569,6 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
     </div>
   </div>
 </div>
-
 <div class="modal-overlay" id="qr-view-modal">
   <div class="modal" style="text-align:center">
     <div class="modal-title" id="qr-view-title">QR Code</div>
@@ -1599,7 +580,6 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
     <button class="btn sm secondary" style="margin-top:.5rem" onclick="closeQRView()">Fermer</button>
   </div>
 </div>
-
 <div class="modal-overlay" id="manual-op-modal">
   <div class="modal">
     <div class="modal-title">⌨️ Saisie manuelle — QR Chauffeur</div>
@@ -1614,44 +594,170 @@ tbody td { padding: .75rem 1rem; font-weight: 500; }
 <div class="toast" id="toast"></div>
 
 <script>
-// ===== INJECT 3D LOGO SVGs =====
-function injectLogos() {
-  const tpl = document.getElementById('tpl-logo-svg');
-  if (!tpl) return;
-  ['login-logo-icon','sidebar-logo-icon'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = tpl.innerHTML;
+const DEMO_MODE = true;
+const SUPABASE_URL      = 'https://ivfoeoxhbzvuvtlmbgwi.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2Zm9lb3hoYnp2dXZ0bG1iZ3dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTQ0NjcsImV4cCI6MjA5NDMzMDQ2N30.eWiSABzSQuwfE2EkcRPVr27R0jxQfTnBDbODjNfs6sQ';
+
+const _DS = {
+  profiles:[
+    {id:'demo-admin-1',  name:'Karim Benjelloun', email:'admin@demo.com',    role:'admin',    phone:'+212 6 00 11 22 33'},
+    {id:'demo-op-1',     name:'Fatima Zouari',    email:'operator@demo.com', role:'operator', phone:'+212 6 00 44 55 66'},
+    {id:'demo-driver-1', name:'Youssef Alami',    email:'driver@demo.com',   role:'driver',   phone:'+212 6 00 77 88 99'},
+    {id:'demo-driver-2', name:'Hassan Idrissi',   email:'driver2@demo.com',  role:'driver',   phone:'+212 6 11 22 33 44'},
+    {id:'demo-driver-3', name:'Omar Benhadi',     email:'driver3@demo.com',  role:'driver',   phone:'+212 6 55 66 77 88'},
+  ],
+  drivers:[
+    {id:'drv-1',user_id:'demo-driver-1',vehicle:'CAM-SOLO',qr_code:'DRIVER-demo-driver-1-001',status:'waiting',
+     profiles:{name:'Youssef Alami', phone:'+212 6 00 77 88 99',email:'driver@demo.com'}},
+    {id:'drv-2',user_id:'demo-driver-2',vehicle:'REMQ',    qr_code:'DRIVER-demo-driver-2-002',status:'arrived',
+     profiles:{name:'Hassan Idrissi',phone:'+212 6 11 22 33 44',email:'driver2@demo.com'}},
+    {id:'drv-3',user_id:'demo-driver-3',vehicle:'DUCATO',  qr_code:'DRIVER-demo-driver-3-003',status:'waiting',
+     profiles:{name:'Omar Benhadi',  phone:'+212 6 55 66 77 88',email:'driver3@demo.com'}},
+  ],
+  docks:[
+    {id:'dock-1',name:'Dock A — Usine', qr_code:'DOCK:001:Dock_A_Usine'},
+    {id:'dock-2',name:'Dock B — DZL',   qr_code:'DOCK:002:Dock_B_DZL'},
+    {id:'dock-3',name:'Dock C — Sortie',qr_code:'DOCK:003:Dock_C_Sortie'},
+  ],
+  logs:[
+    {id:'log-1',driver_id:'drv-2',dock_id:'dock-1',status:'arrived',
+     waiting_time:new Date(Date.now()-7200000).toISOString(),entry_time:new Date(Date.now()-3600000).toISOString(),exit_time:null,
+     wait_duration:30,loading_duration:null,
+     drivers:{vehicle:'REMQ',    profiles:{name:'Hassan Idrissi'}},docks:{name:'Dock A — Usine'}},
+    {id:'log-2',driver_id:'drv-1',dock_id:'dock-2',status:'completed',
+     waiting_time:new Date(Date.now()-86400000).toISOString(),entry_time:new Date(Date.now()-82800000).toISOString(),exit_time:new Date(Date.now()-79200000).toISOString(),
+     wait_duration:20,loading_duration:60,
+     drivers:{vehicle:'CAM-SOLO',profiles:{name:'Youssef Alami'}}, docks:{name:'Dock B — DZL'}},
+    {id:'log-3',driver_id:'drv-3',dock_id:'dock-3',status:'completed',
+     waiting_time:new Date(Date.now()-172800000).toISOString(),entry_time:new Date(Date.now()-169200000).toISOString(),exit_time:new Date(Date.now()-165600000).toISOString(),
+     wait_duration:15,loading_duration:45,
+     drivers:{vehicle:'DUCATO',  profiles:{name:'Omar Benhadi'}},  docks:{name:'Dock C — Sortie'}},
+    {id:'log-4',driver_id:'drv-1',dock_id:'dock-1',status:'completed',
+     waiting_time:new Date(Date.now()-259200000).toISOString(),entry_time:new Date(Date.now()-255600000).toISOString(),exit_time:new Date(Date.now()-252000000).toISOString(),
+     wait_duration:25,loading_duration:90,
+     drivers:{vehicle:'CAM-SOLO',profiles:{name:'Youssef Alami'}}, docks:{name:'Dock A — Usine'}},
+  ],
+  planning:[
+    {id:'plan-1',date:new Date().toISOString().slice(0,10),shift:'Shift 1',from_depot:'USINE',to_depot:'DZL Casa',
+     driver_id:'drv-1',vehicle:'CAM-SOLO',note:'Livraison prioritaire',read_by_driver:false,
+     drivers:{vehicle:'CAM-SOLO',profiles:{name:'Youssef Alami'}}},
+    {id:'plan-2',date:new Date().toISOString().slice(0,10),shift:'Shift 2',from_depot:'DZL',to_depot:'Usine Fès',
+     driver_id:'drv-2',vehicle:'REMQ',note:'',read_by_driver:true,
+     drivers:{vehicle:'REMQ',    profiles:{name:'Hassan Idrissi'}}},
+    {id:'plan-3',date:new Date(Date.now()-86400000).toISOString().slice(0,10),shift:'Shift 1',from_depot:'USINE',to_depot:'DZL Rabat',
+     driver_id:'drv-3',vehicle:'DUCATO',note:'Attention fragile',read_by_driver:true,
+     drivers:{vehicle:'DUCATO',  profiles:{name:'Omar Benhadi'}}},
+  ],
+};
+
+const _DEMO_ACCOUNTS = {
+  'admin@demo.com':    {password:'admin123',user_id:'demo-admin-1',  role:'admin'},
+  'operator@demo.com': {password:'op123',   user_id:'demo-op-1',     role:'operator'},
+  'driver@demo.com':   {password:'drv123',  user_id:'demo-driver-1', role:'driver'},
+};
+let _demoSession = null;
+function _nid(t){return t+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,6);}
+
+function _demoQ(table){
+  let rows=JSON.parse(JSON.stringify(_DS[table]||[]));
+  let _single=false;
+  const q={
+    select:()=>q,
+    eq:(c,v)=>{rows=rows.filter(r=>r[c]==v);return q;},
+    neq:(c,v)=>{rows=rows.filter(r=>r[c]!=v);return q;},
+    in:(c,vs)=>{rows=rows.filter(r=>vs.includes(r[c]));return q;},
+    gte:(c,v)=>{rows=rows.filter(r=>r[c]>=v);return q;},
+    lte:(c,v)=>{rows=rows.filter(r=>r[c]<=v);return q;},
+    order:()=>q,
+    limit:(n)=>{rows=rows.slice(0,n);return q;},
+    single:()=>{_single=true;return q;},
+    then:(res)=>res(_single?{data:rows[0]||null,error:null}:{data:rows,error:null}),
+  };
+  return q;
+}
+
+const demoDb={
+  auth:{
+    getSession:async()=>({data:{session:_demoSession}}),
+    onAuthStateChange:()=>({data:{subscription:{unsubscribe:()=>{}}}}),
+    signInWithPassword:async({email,password})=>{
+      const acc=_DEMO_ACCOUNTS[email];
+      if(!acc||acc.password!==password)return{data:null,error:{message:'Email ou mot de passe incorrect'}};
+      _demoSession={user:{id:acc.user_id,email}};
+      return{data:{user:_demoSession.user},error:null};
+    },
+    signUp:async()=>({data:{user:null},error:{message:'Création de compte désactivée en mode démo'}}),
+    signOut:async()=>{_demoSession=null;return{};},
+  },
+  from:(table)=>({
+    select:()=>_demoQ(table),
+    insert:async(rows)=>{
+      const arr=Array.isArray(rows)?rows:[rows];
+      arr.forEach(r=>{
+        r.id=r.id||_nid(table);
+        if(table==='logs'&&r.driver_id){
+          const d=_DS.drivers.find(x=>x.id===r.driver_id);
+          r.drivers=d?{vehicle:d.vehicle,profiles:d.profiles}:null;
+          const dk=r.dock_id?_DS.docks.find(x=>x.id===r.dock_id):null;
+          r.docks=dk?{name:dk.name}:null;
+        }
+        if(table==='planning'&&r.driver_id){
+          const d=_DS.drivers.find(x=>x.id===r.driver_id);
+          r.drivers=d?{vehicle:d.vehicle,profiles:d.profiles}:null;
+        }
+        _DS[table].push(r);
+      });
+      return{data:arr,error:null};
+    },
+    update:(updates)=>({
+      eq:(c,v)=>({
+        eq:()=>({then:(res)=>res({data:null,error:null})}),
+        then:(res)=>{_DS[table].forEach(r=>{if(r[c]==v)Object.assign(r,updates);});res({data:null,error:null});}
+      }),
+      neq:(c,v)=>({then:(res)=>{_DS[table].forEach(r=>{if(r[c]!=v)Object.assign(r,updates);});res({data:null,error:null});}}),
+      in:(c,vs)=>({then:(res)=>{_DS[table].forEach(r=>{if(vs.includes(r[c]))Object.assign(r,updates);});res({data:null,error:null});}}),
+    }),
+    delete:()=>({
+      eq:(c,v)=>({then:(res)=>{_DS[table]=_DS[table].filter(r=>r[c]!=v);res({data:null,error:null});}})
+    }),
+  }),
+};
+
+// ── Logo inject ──────────────────────────────────────────────
+function injectLogos(){
+  const tpl=document.getElementById('tpl-logo-svg');
+  if(!tpl)return;
+  ['login-logo-icon','sidebar-logo-icon'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.innerHTML=tpl.innerHTML;
   });
 }
 injectLogos();
 
-document.addEventListener('DOMContentLoaded', async () => {
+if(DEMO_MODE){
+  const b=document.createElement('div');
+  b.className='demo-banner';
+  b.innerHTML='🟡 MODE DÉMO — Données fictives en mémoire <span>| Aucune connexion Supabase</span>';
+  document.body.prepend(b);
+  document.body.classList.add('has-demo-banner');
+}
 
-const SUPABASE_URL      = 'https://ivfoeoxhbzvuvtlmbgwi.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2Zm9lb3hoYnp2dXZ0bG1iZ3dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3NTQ0NjcsImV4cCI6MjA5NDMzMDQ2N30.eWiSABzSQuwfE2EkcRPVr27R0jxQfTnBDbODjNfs6sQ';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+document.addEventListener('DOMContentLoaded',async()=>{
 
-let currentUser = null, currentProfile = null, currentDriver = null;
+const db=DEMO_MODE?demoDb:window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+let currentUser=null,currentProfile=null,currentDriver=null;
 
-// ============ UTILS ============
+// ── Utils ────────────────────────────────────────────────────
 function showMsg(id,txt,type){const el=document.getElementById(id);if(el){el.textContent=txt;el.className='msg '+type;}}
 function showToast(msg,type='ok'){const t=document.getElementById('toast');if(!t)return;t.textContent=msg;t.className='toast show'+(type==='err'?' err':type==='info'?' info':'');setTimeout(()=>{t.className='toast';},3500);}
 function fmtTime(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
-function fmtTimeShort(iso){if(!iso)return'—';const d=new Date(iso);return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
-function fmtDur(min){if(min==null||min===undefined||isNaN(min))return'—';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m>0?' '+m+'min':''}`:`${m}min`;}
-function badgeHtml(s){const map={waiting:'En attente',arrived:'Au dock',loading:'Chargement',completed:'Terminé'};return`<span class="badge ${s}">${map[s]||s}</span>`;}
+function fmtTimeShort(iso){if(!iso)return'—';return new Date(iso).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+function fmtDur(min){if(min==null||isNaN(min))return'—';const h=Math.floor(min/60),m=min%60;return h?`${h}h${m>0?' '+m+'min':''}`:`${m}min`;}
+function badgeHtml(s){const map={waiting:'En attente',arrived:'Au dock',completed:'Terminé'};return`<span class="badge ${s}">${map[s]||s}</span>`;}
 function isDZL(str){return str&&/dzl/i.test(str.replace(/\s/g,''));}
-function dateCut(period){
-  const now=new Date(),from=new Date();
-  if(period==='today'){from.setHours(0,0,0,0);}
-  else if(period==='week'){from.setDate(now.getDate()-7);}
-  else if(period==='month'){from.setDate(now.getDate()-30);}
-  else return null;
-  return from.toISOString();
-}
-function minsBetween(a,b){if(!a||!b)return null;return Math.round((new Date(b)-new Date(a))/60000);}
+function dateCut(p){const now=new Date(),f=new Date();if(p==='today'){f.setHours(0,0,0,0);}else if(p==='week'){f.setDate(now.getDate()-7);}else if(p==='month'){f.setDate(now.getDate()-30);}else return null;return f.toISOString();}
 
-// ============ QR ============
+// ── QR ───────────────────────────────────────────────────────
 function generateQRInto(id,text,size=200){
   const c=document.getElementById(id);if(!c||!text)return;
   c.innerHTML='';
@@ -1689,87 +795,92 @@ async function downloadQRById(){
   if(!txt)return;await downloadQR(txt,title.replace(/[^a-zA-Z0-9-_]/g,'-'));
 }
 
-// ============ AUTH ============
+// ── Auth ─────────────────────────────────────────────────────
 async function doLogin(){
   const email=document.getElementById('login-email').value.trim();
   const pw=document.getElementById('login-pass').value;
   if(!email||!pw){showMsg('login-msg','Remplissez email et mot de passe.','error');return;}
-  const{data,error}=await supabase.auth.signInWithPassword({email,password:pw});
+  const{data,error}=await db.auth.signInWithPassword({email,password:pw});
   if(error){showMsg('login-msg',error.message,'error');return;}
   await loadUserData(data.user);
 }
-const quickLogin = async (email,pwd) => {document.getElementById('login-email').value=email;document.getElementById('login-pass').value=pwd;await doLogin();}
-
+const quickLogin=async(email,pwd)=>{
+  document.getElementById('login-email').value=email;
+  document.getElementById('login-pass').value=pwd;
+  await doLogin();
+};
 async function doRegister(){
+  if(DEMO_MODE){showMsg('reg-msg','Création de compte désactivée en mode démo.','error');return;}
   const name=document.getElementById('reg-name').value.trim();
   const email=document.getElementById('reg-email').value.trim();
   const phone=document.getElementById('reg-phone').value.trim();
   const pw=document.getElementById('reg-pass').value;
   const role=document.getElementById('reg-role').value;
   const vehicle=document.getElementById('reg-vehicle').value;
-  if(!name||!email||!pw){showMsg('reg-msg','Remplissez tous les champs obligatoires.','error');return;}
+  if(!name||!email||!pw){showMsg('reg-msg','Remplissez tous les champs.','error');return;}
   if(pw.length<6){showMsg('reg-msg','Mot de passe trop court (min 6).','error');return;}
-  showMsg('reg-msg','Création du compte...','success');
-  const{data:sd,error:se}=await supabase.auth.signUp({email,password:pw,options:{data:{name,phone,role}}});
+  const{data:sd,error:se}=await db.auth.signUp({email,password:pw,options:{data:{name,phone,role}}});
   if(se){showMsg('reg-msg',se.message,'error');return;}
   if(!sd.user){showMsg('reg-msg','Vérifiez votre email puis connectez-vous.','success');return;}
   if(role==='driver'){
-    showMsg('reg-msg','Configuration du profil chauffeur...','success');
     await new Promise(r=>setTimeout(r,1500));
     const qrCode=`DRIVER-${sd.user.id}-${Date.now()}`;
-    const{error:de}=await supabase.from('drivers').insert([{user_id:sd.user.id,vehicle,qr_code:qrCode,status:'waiting'}]);
+    const{error:de}=await db.from('drivers').insert([{user_id:sd.user.id,vehicle,qr_code:qrCode,status:'waiting'}]);
     if(de){showMsg('reg-msg','Erreur profil chauffeur : '+de.message,'error');return;}
   }
   showMsg('reg-msg','Compte créé ! Connectez-vous.','success');
   setTimeout(()=>switchAuthTab('login'),1500);
 }
-
 async function loadUserData(user){
-  if(!user)return;currentUser=user;
-  const{data:profile}=await supabase.from('profiles').select('*').eq('id',user.id).single();
-  if(!profile){await new Promise(r=>setTimeout(r,1000));return loadUserData(user);}
+  if(!user)return;
+  currentUser=user;
+  let{data:profile}=await db.from('profiles').select('*').eq('id',user.id).single();
+  if(!profile){
+    await new Promise(r=>setTimeout(r,800));
+    const res=await db.from('profiles').select('*').eq('id',user.id).single();
+    profile=res.data;
+  }
+  if(!profile){showMsg('login-msg','Profil introuvable. Contactez l\'administrateur.','error');return;}
   currentProfile=profile;
   if(profile.role==='driver'){
-    const{data:drv}=await supabase.from('drivers').select('*').eq('user_id',user.id).single();
+    const{data:drv}=await db.from('drivers').select('*').eq('user_id',user.id).single();
     currentDriver=drv;
   }
   document.getElementById('login-screen').classList.remove('active');
   document.getElementById('app-screen').classList.add('active');
   setupNav();
 }
-
 async function doLogout(){
-  await supabase.auth.signOut();currentUser=null;currentProfile=null;currentDriver=null;
+  await db.auth.signOut();
+  currentUser=null;currentProfile=null;currentDriver=null;
   document.getElementById('app-screen').classList.remove('active');
   document.getElementById('login-screen').classList.add('active');
   showToast('Déconnecté');
 }
-
 function switchAuthTab(tab){
   document.getElementById('form-login').style.display=tab==='login'?'block':'none';
   document.getElementById('form-register').style.display=tab==='register'?'block':'none';
   document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',(i===0&&tab==='login')||(i===1&&tab==='register')));
 }
 
-// ============ NAV ============
+// ── Nav ──────────────────────────────────────────────────────
 const navConfig={
   driver:[
-    {id:'driver-profile',label:'Mon profil & QR',icon:'<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>'},
-    {id:'driver-planning',label:'Mon planning',icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',notif:true},
-    {id:'driver-logs',label:'Mes passages',icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>'}
+    {id:'driver-profile', label:'Mon profil & QR',  icon:'<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>'},
+    {id:'driver-planning',label:'Mon planning',      icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',notif:true},
+    {id:'driver-logs',    label:'Mes passages',      icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>'},
   ],
   operator:[
-    {id:'operator-scan',label:'Scanner Chauffeur',icon:'<path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/>'}
+    {id:'operator-scan',label:'Scanner Chauffeur',icon:'<path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="7" y="7" width="10" height="10" rx="1"/>'},
   ],
   admin:[
-    {id:'admin-dashboard',label:'Dashboard',icon:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'},
-    {id:'admin-logs',label:'Tous les logs',icon:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>'},
-    {id:'admin-drivers',label:'Chauffeurs',icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>'},
-    {id:'admin-docks',label:'Docks',icon:'<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'},
-    {id:'admin-planning',label:'Planning',icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'}
-  ]
+    {id:'admin-dashboard',label:'Dashboard',     icon:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>'},
+    {id:'admin-logs',     label:'Tous les logs', icon:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>'},
+    {id:'admin-drivers',  label:'Chauffeurs',    icon:'<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>'},
+    {id:'admin-docks',    label:'Docks',         icon:'<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'},
+    {id:'admin-planning', label:'Planning',      icon:'<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'},
+  ],
 };
-
 function setupNav(){
   if(!currentProfile)return;
   const role=currentProfile.role;
@@ -1779,33 +890,33 @@ function setupNav(){
   document.getElementById('nav-items').innerHTML=navConfig[role].map(n=>`
     <div class="nav-item" id="nav-${n.id}" onclick="goTo('${n.id}')">
       <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">${n.icon}</svg>
-      ${n.label}${n.notif?'<span class="notif-dot" id="notif-dot-'+n.id+'" style="display:none"></span>':''}
+      ${n.label}${n.notif?`<span class="notif-dot" id="notif-dot-${n.id}" style="display:none"></span>`:''}
     </div>`).join('');
   goTo(navConfig[role][0].id);
   if(role==='driver')checkDriverNotifs();
 }
-
 function goTo(pageId){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const pg=document.getElementById('page-'+pageId);
   const ni=document.getElementById('nav-'+pageId);
-  if(pg)pg.classList.add('active');if(ni)ni.classList.add('active');
+  if(pg)pg.classList.add('active');
+  if(ni)ni.classList.add('active');
   closeSidebar();
-  if(pageId==='driver-profile')renderDriverProfile();
-  if(pageId==='driver-logs')renderDriverLogs();
-  if(pageId==='driver-planning')renderDriverPlanning();
-  if(pageId==='operator-scan')renderOperatorScan();
-  if(pageId==='admin-dashboard')renderAdminDashboard();
-  if(pageId==='admin-logs')renderAdminLogs();
-  if(pageId==='admin-drivers')renderAdminDrivers();
-  if(pageId==='admin-docks')renderAdminDocks();
-  if(pageId==='admin-planning')renderAdminPlanning();
+  if(pageId==='driver-profile')  renderDriverProfile();
+  if(pageId==='driver-logs')     renderDriverLogs();
+  if(pageId==='driver-planning') renderDriverPlanning();
+  if(pageId==='operator-scan')   renderOperatorScan();
+  if(pageId==='admin-dashboard') renderAdminDashboard();
+  if(pageId==='admin-logs')      renderAdminLogs();
+  if(pageId==='admin-drivers')   renderAdminDrivers();
+  if(pageId==='admin-docks')     renderAdminDocks();
+  if(pageId==='admin-planning')  renderAdminPlanning();
 }
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('nav-backdrop').classList.toggle('open');}
 function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('nav-backdrop').classList.remove('open');}
 
-// ============ DRIVER PROFILE ============
+// ── Driver Profile ───────────────────────────────────────────
 async function renderDriverProfile(){
   if(!currentDriver){document.getElementById('driver-profile-header').innerHTML='<p style="color:var(--muted)">Profil chauffeur non trouvé.</p>';return;}
   const u=currentProfile,d=currentDriver;
@@ -1820,12 +931,15 @@ async function renderDriverProfile(){
   document.getElementById('qr-card-vehicle').textContent='🚛 '+d.vehicle;
   document.getElementById('driver-qr-label').textContent=d.qr_code;
   generateQRInto('driver-qr-container',d.qr_code,200);
-  const{data:logs}=await supabase.from('logs').select('*,docks(name)').eq('driver_id',d.id);
-  const active=logs?.find(l=>l.status!=='completed');
+  const{data:logs}=await db.from('logs').select('*').eq('driver_id',d.id);
+  const active=(logs||[]).find(l=>l.status!=='completed');
   const box=document.getElementById('driver-status-display');
   if(active){
-    if(active.status==='waiting'){box.innerHTML=`<div class="status-waiting-box">⏳ En attente au dock <strong>${active.docks?.name||'—'}</strong> depuis ${fmtTime(active.waiting_time)}<br>L'opérateur va scanner votre QR pour valider l'entrée.</div>`;}
-    else{box.innerHTML=`<div class="status-active-box">🟢 Entrée enregistrée au dock <strong>${active.docks?.name||'—'}</strong> — ${fmtTime(active.entry_time)}</div>`;}
+    const dockName=active.docks?.name||'—';
+    if(active.status==='waiting')
+      box.innerHTML=`<div class="status-waiting-box">⏳ En attente au dock <strong>${dockName}</strong> depuis ${fmtTime(active.waiting_time)}<br>L'opérateur va scanner votre QR pour valider l'entrée.</div>`;
+    else
+      box.innerHTML=`<div class="status-active-box">🟢 Entrée enregistrée au dock <strong>${dockName}</strong> — ${fmtTime(active.entry_time)}</div>`;
   }else{box.innerHTML=badgeHtml('waiting')+' — Aucune activité en cours';}
 }
 
@@ -1846,7 +960,7 @@ async function downloadDriverCard(){
     ctx.fillStyle='#fff';ctx.font='bold 11px sans-serif';ctx.fillText('CHAUFFEUR',306,53);
     ctx.strokeStyle='rgba(39,174,96,.3)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(30,75);ctx.lineTo(390,75);ctx.stroke();
     ctx.fillStyle='#1a2e1e';ctx.font='bold 24px sans-serif';ctx.fillText(currentProfile?.name||'-',30,115);
-    ctx.fillStyle='#7a9984';ctx.font='15px sans-serif';ctx.fillText('Vehicule : '+(currentDriver?.vehicle||'-'),30,145);
+    ctx.fillStyle='#7a9984';ctx.font='15px sans-serif';ctx.fillText('Véhicule : '+(currentDriver?.vehicle||'-'),30,145);
     const qi=new Image();await new Promise(r=>{qi.onload=r;qi.src=qrDataUrl;});
     const qsz=260,qx=80,qy=175;
     ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(qx-10,qy-10,qsz+20,qsz+20,14);ctx.fill();
@@ -1856,14 +970,14 @@ async function downloadDriverCard(){
     const code=currentDriver.qr_code||'';ctx.fillText(code.length>52?code.slice(0,52)+'...':code,210,465);
     ctx.strokeStyle='rgba(200,230,208,.8)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(30,485);ctx.lineTo(390,485);ctx.stroke();
     ctx.fillStyle='#7a9984';ctx.font='12px sans-serif';ctx.textAlign='center';
-    ctx.fillText('Presentez cette carte a l operateur du dock',210,510);
-    ctx.font='10px sans-serif';ctx.fillText('WareTrack — Gastromixte · Maitre Fromager',210,535);
+    ctx.fillText('Présentez cette carte à l\'opérateur du dock',210,510);
+    ctx.font='10px sans-serif';ctx.fillText('WareTrack — Gastromixte',210,535);
     const lk=document.createElement('a');lk.download='carte-'+(currentDriver.vehicle||'chauffeur')+'.png';lk.href=fc.toDataURL('image/png');lk.click();
     showToast('Carte téléchargée ✅');
   }catch(e){console.error(e);showToast('Erreur génération carte','err');}
 }
 
-// ============ DRIVER SCAN DOCK ============
+// ── Driver Scan Dock ─────────────────────────────────────────
 let driverQrScanner=null;
 function openDriverScanner(){
   const re=document.getElementById('driver-qr-reader');
@@ -1874,8 +988,8 @@ function openDriverScanner(){
   try{
     driverQrScanner=new Html5Qrcode('driver-qr-reader');
     driverQrScanner.start({facingMode:'environment'},{fps:10,qrbox:200},async(txt)=>{
-      try{driverQrScanner.stop();}catch(e){}driverQrScanner=null;re.style.display='none';
-      await driverProcessDockQR(txt);
+      try{driverQrScanner.stop();}catch(e){}driverQrScanner=null;
+      re.style.display='none';await driverProcessDockQR(txt);
     },()=>{});
   }catch(e){re.innerHTML='<p style="color:var(--muted);font-size:.78rem;padding:1rem">Caméra indisponible — saisie manuelle.</p>';}
 }
@@ -1888,44 +1002,41 @@ async function driverSubmitManual(){
 }
 async function driverProcessDockQR(code){
   if(!currentDriver){showToast('Profil chauffeur introuvable','err');return;}
-  const{data:existing}=await supabase.from('logs').select('id,status').eq('driver_id',currentDriver.id).neq('status','completed').limit(1);
+  const{data:existing}=await db.from('logs').select('id,status').eq('driver_id',currentDriver.id).neq('status','completed');
   if(existing&&existing.length){showToast('Vous êtes déjà enregistré (statut: '+existing[0].status+')','err');return;}
-  const{data:dock}=await supabase.from('docks').select('*').eq('qr_code',code).single();
+  const{data:dock}=await db.from('docks').select('*').eq('qr_code',code).single();
   if(!dock){showToast('QR dock non reconnu','err');return;}
-  const{error}=await supabase.from('logs').insert([{driver_id:currentDriver.id,dock_id:dock.id,status:'waiting',waiting_time:new Date().toISOString()}]);
-  if(error){showToast(error.message,'err');return;}
-  await supabase.from('drivers').update({status:'waiting'}).eq('id',currentDriver.id);
+  await db.from('logs').insert([{driver_id:currentDriver.id,dock_id:dock.id,status:'waiting',waiting_time:new Date().toISOString()}]);
+  await db.from('drivers').update({status:'waiting'}).eq('id',currentDriver.id);
   document.getElementById('driver-scan-dock-name').textContent='📍 '+dock.name;
   document.getElementById('driver-scan-result').style.display='block';
-  showToast('✅ Présence signalée au '+dock.name+' — En attente opérateur','info');
+  showToast('✅ Présence signalée au '+dock.name,'info');
   renderDriverProfile();
 }
 function driverResetScan(){
   if(driverQrScanner){try{driverQrScanner.stop();}catch(e){}driverQrScanner=null;}
-  const res=document.getElementById('driver-scan-result');if(res)res.style.display='none';
-  const re=document.getElementById('driver-qr-reader');if(re)re.style.display='none';
-  const me=document.getElementById('driver-scan-manual');if(me)me.style.display='none';
+  ['driver-scan-result','driver-qr-reader','driver-scan-manual'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
   const m=document.getElementById('driver-manual-qr');if(m)m.value='';
 }
 
-// ============ DRIVER LOGS ============
+// ── Driver Logs ──────────────────────────────────────────────
 async function renderDriverLogs(){
   if(!currentDriver)return;
-  const{data:logs}=await supabase.from('logs').select('*,docks(name)').eq('driver_id',currentDriver.id).order('waiting_time',{ascending:false});
+  const{data:logs}=await db.from('logs').select('*').eq('driver_id',currentDriver.id).order('waiting_time',{ascending:false});
   const tb=document.getElementById('driver-logs-tbody');
   if(!logs||!logs.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun passage</td></tr>';return;}
   tb.innerHTML=logs.map(l=>`<tr><td>${l.docks?.name||'—'}</td><td>${fmtTime(l.waiting_time)}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td><td>${fmtDur(l.loading_duration)}</td><td>${badgeHtml(l.status)}</td></tr>`).join('');
 }
 
-// ============ DRIVER PLANNING ============
+// ── Driver Planning ──────────────────────────────────────────
 async function renderDriverPlanning(){
   if(!currentDriver)return;
-  const{data:plans}=await supabase.from('planning').select('*').eq('driver_id',currentDriver.id).order('date',{ascending:false});
+  const{data:plans}=await db.from('planning').select('*').eq('driver_id',currentDriver.id).order('date',{ascending:false});
   const container=document.getElementById('driver-planning-list');
   if(!plans||!plans.length){container.innerHTML='<div class="card"><p class="no-data">Aucune mission assignée.</p></div>';return;}
   const unread=plans.filter(p=>!p.read_by_driver);
   if(unread.length){
-    await supabase.from('planning').update({read_by_driver:true}).in('id',unread.map(p=>p.id));
+    await db.from('planning').update({read_by_driver:true}).in('id',unread.map(p=>p.id));
     const dot=document.getElementById('notif-dot-driver-planning');
     if(dot)dot.style.display='none';
   }
@@ -1933,11 +1044,10 @@ async function renderDriverPlanning(){
   let html=`<div class="card" style="overflow-x:auto"><table style="min-width:500px;width:100%"><thead><tr><th>Date</th><th>Shift</th><th>Départ</th><th>Destination</th><th>Véhicule</th><th>Note</th></tr></thead><tbody>`;
   for(const p of plans){
     const isToday=p.date===today;
-    const fromDepot=p.from_depot==='USINE'?'USI':p.from_depot;
     html+=`<tr style="${isToday?'background:rgba(39,174,96,.08);':''}">
       <td>${p.date}${isToday?' <strong style="color:var(--green)">(auj.)</strong>':''}</td>
       <td><span class="badge ${p.shift==='Shift 1'?'shift1':'shift2'}">${p.shift==='Shift 1'?'SHIFT01':'SHIFT02'}</span></td>
-      <td>${fromDepot}</td>
+      <td>${p.from_depot||'—'}</td>
       <td>${p.to_depot||'—'}${isDZL(p.to_depot)?' <span class="badge dzl">DZL</span>':''}</td>
       <td>${currentDriver.vehicle}</td>
       <td>${p.note||'—'}</td></tr>`;
@@ -1945,46 +1055,34 @@ async function renderDriverPlanning(){
   html+=`</tbody></table></div>`;
   container.innerHTML=html;
 }
-
 async function checkDriverNotifs(){
   if(!currentDriver)return;
-  const{data}=await supabase.from('planning').select('id').eq('driver_id',currentDriver.id).eq('read_by_driver',false);
+  const{data}=await db.from('planning').select('id').eq('driver_id',currentDriver.id).eq('read_by_driver',false);
   const dot=document.getElementById('notif-dot-driver-planning');
   if(dot)dot.style.display=(data&&data.length>0)?'block':'none';
 }
 
-// ============ OPERATOR SCAN ============
+// ── Operator Scan ────────────────────────────────────────────
 let opQrScanner=null;
-
-async function renderOperatorScan(){
-  await renderOperatorActive();
-  await renderDockQRs();
-}
-
+async function renderOperatorScan(){await renderOperatorActive();await renderDockQRs();}
 function openOperatorScanner(){
-  document.getElementById('scanner-modal-title').textContent='📷 Scanner QR Chauffeur';
   document.getElementById('manual-qr-input').value='';
   document.getElementById('scanner-modal').classList.add('open');
-  startCamera();
-}
-
-function startCamera(){
   if(opQrScanner){try{opQrScanner.stop();}catch(e){}opQrScanner=null;}
   const el=document.getElementById('qr-reader');el.innerHTML='';
   try{
     opQrScanner=new Html5Qrcode('qr-reader');
     opQrScanner.start({facingMode:'environment'},{fps:10,qrbox:200},async(txt)=>{
-      stopCamera();closeScanner();await processOperatorScan(txt);
+      try{opQrScanner.stop();}catch(e){}opQrScanner=null;
+      closeScanner();await processOperatorScan(txt);
     },()=>{});
-  }catch(e){el.innerHTML='<p style="color:var(--muted);font-size:.78rem;padding:1rem">Caméra indisponible — saisie manuelle.</p>';}
+  }catch(e){el.innerHTML='<p style="color:var(--muted);font-size:.78rem;padding:1rem">Caméra indisponible.</p>';}
 }
-
 async function submitManualQR(){
   const v=document.getElementById('manual-qr-input').value.trim();
   if(!v){showToast('Entrez un code QR','err');return;}
   closeScanner();await processOperatorScan(v);
 }
-
 function openManualOpModal(){document.getElementById('manual-op-modal').classList.add('open');document.getElementById('manual-op-input').value='';}
 function closeManualOpModal(){document.getElementById('manual-op-modal').classList.remove('open');}
 async function submitManualOp(){
@@ -1992,48 +1090,40 @@ async function submitManualOp(){
   if(!v){showToast('Entrez un code QR','err');return;}
   closeManualOpModal();await processOperatorScan(v);
 }
-
 async function processOperatorScan(code){
-  const{data:driver}=await supabase.from('drivers').select('*,profiles!drivers_user_id_fkey(name,phone)').eq('qr_code',code).single();
+  const{data:driver}=await db.from('drivers').select('*').eq('qr_code',code).single();
   if(!driver){showToast('QR chauffeur non reconnu','err');return;}
   const driverName=driver.profiles?.name||'Chauffeur';
-  const{data:activeLog}=await supabase.from('logs').select('*,docks(name)').eq('driver_id',driver.id).neq('status','completed').order('waiting_time',{ascending:false}).limit(1).single();
-  const box=document.getElementById('op-scan-result');
-  box.style.display='block';
-  if(!activeLog){
-    document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--warn)">⚠️ <strong>${driverName}</strong> n'est pas enregistré à un dock.</span>`;
-    showToast('Chauffeur non présent à un dock','err');return;
-  }
+  const{data:logs}=await db.from('logs').select('*').eq('driver_id',driver.id).neq('status','completed');
+  const activeLog=logs&&logs.length?logs[0]:null;
+  const box=document.getElementById('op-scan-result');box.style.display='block';
+  if(!activeLog){document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--warn)">⚠️ <strong>${driverName}</strong> n'est pas enregistré à un dock.</span>`;showToast('Chauffeur non présent à un dock','err');return;}
   if(activeLog.status==='waiting'){
     const now=new Date().toISOString();
     const waitMin=activeLog.waiting_time?Math.round((new Date(now)-new Date(activeLog.waiting_time))/60000):0;
-    const{error}=await supabase.from('logs').update({status:'arrived',entry_time:now,wait_duration:waitMin}).eq('id',activeLog.id);
-    if(error){showToast(error.message,'err');return;}
-    await supabase.from('drivers').update({status:'arrived'}).eq('id',driver.id);
-    document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--green-dark)">✅ <strong>ENTRÉE</strong> enregistrée — ${driverName} · ${driver.vehicle}<br>Dock : ${activeLog.docks?.name||'—'} · Attente : ${fmtDur(waitMin)}</span>`;
-    showToast('✅ Entrée enregistrée — '+driverName,'ok');
-    await renderOperatorActive();
-  } else if(activeLog.status==='arrived'){
+    await db.from('logs').update({status:'arrived',entry_time:now,wait_duration:waitMin}).eq('id',activeLog.id);
+    await db.from('drivers').update({status:'arrived'}).eq('id',driver.id);
+    const dockName=activeLog.docks?.name||'—';
+    document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--green-dark)">✅ <strong>ENTRÉE</strong> — ${driverName} · ${driver.vehicle}<br>Dock : ${dockName} · Attente : ${fmtDur(waitMin)}</span>`;
+    showToast('✅ Entrée enregistrée — '+driverName);await renderOperatorActive();
+  }else if(activeLog.status==='arrived'){
     const now=new Date().toISOString();
     const loadMin=activeLog.entry_time?Math.round((new Date(now)-new Date(activeLog.entry_time))/60000):0;
-    const{error}=await supabase.from('logs').update({status:'completed',exit_time:now,loading_duration:loadMin}).eq('id',activeLog.id);
-    if(error){showToast(error.message,'err');return;}
-    await supabase.from('drivers').update({status:'waiting'}).eq('id',driver.id);
-    document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--navy)">🏁 <strong>SORTIE</strong> — Opération terminée · ${driverName}<br>Dock : ${activeLog.docks?.name||'—'} · Durée chargement : ${fmtDur(loadMin)}</span>`;
-    showToast('🏁 Sortie enregistrée — '+driverName,'info');
-    await renderOperatorActive();
+    await db.from('logs').update({status:'completed',exit_time:now,loading_duration:loadMin}).eq('id',activeLog.id);
+    await db.from('drivers').update({status:'waiting'}).eq('id',driver.id);
+    const dockName=activeLog.docks?.name||'—';
+    document.getElementById('op-scan-text').innerHTML=`<span style="color:var(--navy)">🏁 <strong>SORTIE</strong> — Opération terminée · ${driverName}<br>Dock : ${dockName} · Durée chargement : ${fmtDur(loadMin)}</span>`;
+    showToast('🏁 Sortie enregistrée — '+driverName,'info');await renderOperatorActive();
   }
 }
-
 async function renderOperatorActive(){
-  const{data:logs}=await supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)').neq('status','completed');
+  const{data:logs}=await db.from('logs').select('*').neq('status','completed');
   const tb=document.getElementById('operator-active-tbody');
   if(!logs||!logs.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun camion actif</td></tr>';return;}
   tb.innerHTML=logs.map(l=>`<tr><td>${l.drivers?.profiles?.name||'—'}</td><td>${l.drivers?.vehicle||'—'}</td><td>${l.docks?.name||'—'}</td><td>${fmtTime(l.waiting_time)}</td><td>${fmtTime(l.entry_time)}</td><td>${badgeHtml(l.status)}</td></tr>`).join('');
 }
-
 async function renderDockQRs(){
-  const{data:docks}=await supabase.from('docks').select('*');
+  const{data:docks}=await db.from('docks').select('*');
   const c=document.getElementById('dock-qr-list');c.innerHTML='';
   if(!docks)return;
   for(const dk of docks){
@@ -2047,29 +1137,20 @@ async function renderDockQRs(){
     generateQRInto(id,dk.qr_code,130);
   }
 }
+function closeScanner(){if(opQrScanner){try{opQrScanner.stop();}catch(e){}opQrScanner=null;}document.getElementById('scanner-modal').classList.remove('open');}
 
-function stopCamera(){if(opQrScanner){try{opQrScanner.stop();}catch(e){}opQrScanner=null;}}
-function closeScanner(){stopCamera();document.getElementById('scanner-modal').classList.remove('open');}
-
-// ============ ADMIN DASHBOARD ============
+// ── Admin Dashboard ──────────────────────────────────────────
 async function renderAdminDashboard(){
   const period=document.getElementById('dash-period')?.value||'month';
   const fromDate=document.getElementById('dash-from')?.value;
   const toDate=document.getElementById('dash-to')?.value;
-  let query=supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)');
-  if(fromDate&&toDate){
-    query=query.gte('waiting_time',fromDate+'T00:00:00').lte('waiting_time',toDate+'T23:59:59');
-  } else {
-    const cut=dateCut(period);
-    if(cut)query=query.gte('waiting_time',cut);
-  }
-  const[{data:logs},{data:drivers},{data:docks},{data:plans}]=await Promise.all([
-    query,
-    supabase.from('drivers').select('id,vehicle'),
-    supabase.from('docks').select('id,name'),
-    supabase.from('planning').select('from_depot,to_depot')
-  ]);
-  const allLogs=logs||[];
+  let{data:logs}=await db.from('logs').select('*');
+  let{data:drivers}=await db.from('drivers').select('id,vehicle');
+  let{data:docks}=await db.from('docks').select('id,name');
+  let{data:plans}=await db.from('planning').select('from_depot,to_depot');
+  let allLogs=logs||[];
+  if(fromDate&&toDate)allLogs=allLogs.filter(l=>l.waiting_time>=fromDate+'T00:00:00'&&l.waiting_time<=toDate+'T23:59:59');
+  else{const cut=dateCut(period);if(cut)allLogs=allLogs.filter(l=>l.waiting_time>=cut);}
   const completed=allLogs.filter(l=>l.status==='completed');
   const active=allLogs.filter(l=>l.status!=='completed');
   const waitTimes=completed.filter(l=>l.wait_duration!=null).map(l=>l.wait_duration);
@@ -2078,46 +1159,13 @@ async function renderAdminDashboard(){
   const avgLoad=loadTimes.length?Math.round(loadTimes.reduce((a,b)=>a+b,0)/loadTimes.length):0;
   const allPlans=plans||[];
   const bardage=allPlans.filter(p=>p.from_depot==='USINE'&&isDZL(p.to_depot)).length;
-
   document.getElementById('admin-kpi-hero').innerHTML=`
-    <div class="kpi-card green">
-      <span class="kpi-icon">🚛</span>
-      <div class="kpi-val">${active.length}</div>
-      <div class="kpi-label">Camions actifs</div>
-      <div class="kpi-trend">en ce moment</div>
-    </div>
-    <div class="kpi-card sky">
-      <span class="kpi-icon">✅</span>
-      <div class="kpi-val">${completed.length}</div>
-      <div class="kpi-label">Passages terminés</div>
-      <div class="kpi-trend">période sélectionnée</div>
-    </div>
-    <div class="kpi-card sun">
-      <span class="kpi-icon">⏳</span>
-      <div class="kpi-val">${fmtDur(avgWait)||'—'}</div>
-      <div class="kpi-label">T. attente moyen</div>
-      <div class="kpi-trend">${waitTimes.length} mesures</div>
-    </div>
-    <div class="kpi-card navy">
-      <span class="kpi-icon">⚙️</span>
-      <div class="kpi-val">${fmtDur(avgLoad)||'—'}</div>
-      <div class="kpi-label">T. chargement moyen</div>
-      <div class="kpi-trend">${loadTimes.length} mesures</div>
-    </div>
-    <div class="kpi-card hill">
-      <span class="kpi-icon">🏭</span>
-      <div class="kpi-val">${bardage}</div>
-      <div class="kpi-label">Bardages Usine→DZL</div>
-      <div class="kpi-trend">planning total</div>
-    </div>
-    <div class="kpi-card warm">
-      <span class="kpi-icon">📋</span>
-      <div class="kpi-val">${allLogs.length}</div>
-      <div class="kpi-label">Total passages</div>
-      <div class="kpi-trend">${drivers?.length||0} chauffeurs · ${docks?.length||0} docks</div>
-    </div>
-  `;
-
+    <div class="kpi-card green"><span class="kpi-icon">🚛</span><div class="kpi-val">${active.length}</div><div class="kpi-label">Camions actifs</div><div class="kpi-trend">en ce moment</div></div>
+    <div class="kpi-card sky"><span class="kpi-icon">✅</span><div class="kpi-val">${completed.length}</div><div class="kpi-label">Passages terminés</div><div class="kpi-trend">période sélectionnée</div></div>
+    <div class="kpi-card sun"><span class="kpi-icon">⏳</span><div class="kpi-val">${fmtDur(avgWait)||'—'}</div><div class="kpi-label">T. attente moyen</div><div class="kpi-trend">${waitTimes.length} mesures</div></div>
+    <div class="kpi-card navy"><span class="kpi-icon">⚙️</span><div class="kpi-val">${fmtDur(avgLoad)||'—'}</div><div class="kpi-label">T. chargement moyen</div><div class="kpi-trend">${loadTimes.length} mesures</div></div>
+    <div class="kpi-card hill"><span class="kpi-icon">🏭</span><div class="kpi-val">${bardage}</div><div class="kpi-label">Bardages Usine→DZL</div><div class="kpi-trend">planning total</div></div>
+    <div class="kpi-card warm"><span class="kpi-icon">📋</span><div class="kpi-val">${allLogs.length}</div><div class="kpi-label">Total passages</div><div class="kpi-trend">${drivers?.length||0} chauffeurs · ${docks?.length||0} docks</div></div>`;
   const tb=document.getElementById('admin-all-ops-tbody');
   if(!allLogs.length){tb.innerHTML='<tr><td colspan="7" class="no-data">Aucune opération sur cette période</td></tr>';}
   else{
@@ -2125,11 +1173,9 @@ async function renderAdminDashboard(){
       const dur=l.entry_time&&l.status!=='completed'?Math.round((new Date()-new Date(l.entry_time))/60000):l.loading_duration;
       return`<tr><td>${l.drivers?.profiles?.name||'—'}</td><td>${l.drivers?.vehicle||'—'}</td><td>${l.docks?.name||'—'}</td><td>${fmtDur(l.wait_duration)}</td><td>${fmtTimeShort(l.entry_time)}</td><td>${fmtDur(dur)}</td><td>${badgeHtml(l.status)}</td></tr>`;
     }).join('');
-    if(allLogs.length>50) tb.innerHTML+=`<tr><td colspan="7" style="text-align:center;color:var(--muted);font-size:.72rem;padding:.5rem">… et ${allLogs.length-50} autres. <a href="#" onclick="goTo('admin-logs')" style="color:var(--green);font-weight:700">Voir tout →</a></td></tr>`;
+    if(allLogs.length>50)tb.innerHTML+=`<tr><td colspan="7" style="text-align:center;color:var(--muted);font-size:.72rem;padding:.5rem">… et ${allLogs.length-50} autres. <a href="#" onclick="goTo('admin-logs')" style="color:var(--green);font-weight:700">Voir tout →</a></td></tr>`;
   }
-
-  const dockMap={};
-  allLogs.forEach(l=>{const name=l.docks?.name||'—';dockMap[name]=(dockMap[name]||0)+1;});
+  const dockMap={};allLogs.forEach(l=>{const n=l.docks?.name||'—';dockMap[n]=(dockMap[n]||0)+1;});
   const maxDock=Math.max(...Object.values(dockMap),1);
   document.getElementById('admin-dock-activity').innerHTML=Object.entries(dockMap).sort((a,b)=>b[1]-a[1]).map(([name,count])=>`
     <div class="dock-pill ${count>0?'active':''}">
@@ -2137,23 +1183,18 @@ async function renderAdminDashboard(){
       <div class="dock-pill-bar"><div class="dock-pill-fill" style="width:${Math.round(count/maxDock*100)}%"></div></div>
       <div class="dock-pill-count">${count} passages</div>
     </div>`).join('')||'<div style="color:var(--muted);font-size:.75rem;font-weight:600">Aucune activité</div>';
-
-  const vehMap={};
-  allLogs.forEach(l=>{const v=l.drivers?.vehicle||'Autre';vehMap[v]=(vehMap[v]||0)+1;});
+  const vehMap={};allLogs.forEach(l=>{const v=l.drivers?.vehicle||'Autre';vehMap[v]=(vehMap[v]||0)+1;});
   const vehColors={'CAM-SOLO':'#27AE60','REMQ':'#3AADDF','CANTE':'#a08000','DUCATO':'#DD6B20'};
   document.getElementById('admin-veh-breakdown').innerHTML=Object.entries(vehMap).map(([v,c])=>`
-    <div class="veh-item">
-      <div class="veh-item-val" style="color:${vehColors[v]||'#1a3c6e'}">${c}</div>
-      <div class="veh-item-lbl">${v}</div>
-    </div>`).join('')||'<div style="color:var(--muted);font-size:.75rem">—</div>';
+    <div class="veh-item"><div class="veh-item-val" style="color:${vehColors[v]||'#1a3c6e'}">${c}</div><div class="veh-item-lbl">${v}</div></div>`).join('')||'<div style="color:var(--muted);font-size:.75rem">—</div>';
 }
 
-// ============ ADMIN LOGS ============
+// ── Admin Logs ───────────────────────────────────────────────
 async function renderAdminLogs(){
   const search=(document.getElementById('filter-search')?.value||'').toLowerCase();
   const status=document.getElementById('filter-status')?.value||'';
   const date=document.getElementById('filter-date')?.value||'';
-  const{data:logs}=await supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)').order('waiting_time',{ascending:false});
+  let{data:logs}=await db.from('logs').select('*').order('waiting_time',{ascending:false});
   let f=logs||[];
   if(status)f=f.filter(l=>l.status===status);
   if(date)f=f.filter(l=>l.waiting_time?.startsWith(date));
@@ -2165,9 +1206,8 @@ async function renderAdminLogs(){
     <td>${fmtTime(l.waiting_time)}</td><td>${fmtTime(l.entry_time)}</td><td>${fmtTime(l.exit_time)}</td>
     <td>${fmtDur(l.wait_duration)}</td><td>${fmtDur(l.loading_duration)}</td><td>${badgeHtml(l.status)}</td></tr>`).join('');
 }
-
 async function exportCSV(){
-  const{data:logs}=await supabase.from('logs').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name)),docks(name)');
+  let{data:logs}=await db.from('logs').select('*');
   const rows=[['Chauffeur','Véhicule','Dock','Arrivée dock','Entrée','Sortie','T.Attente(min)','T.Chargement(min)','Statut']];
   logs?.forEach(l=>rows.push([l.drivers?.profiles?.name||'',l.drivers?.vehicle||'',l.docks?.name||'',fmtTime(l.waiting_time),fmtTime(l.entry_time),fmtTime(l.exit_time),l.wait_duration||'',l.loading_duration||'',l.status]));
   const csv=rows.map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
@@ -2176,21 +1216,21 @@ async function exportCSV(){
   showToast('Export CSV téléchargé ✅');
 }
 
-// ============ ADMIN CHAUFFEURS ============
+// ── Admin Drivers ────────────────────────────────────────────
 async function renderAdminDrivers(){
-  const{data:drivers}=await supabase.from('drivers').select('*,profiles!drivers_user_id_fkey(name,email,phone)');
+  const{data:drivers}=await db.from('drivers').select('*');
   const tb=document.getElementById('admin-drivers-tbody');
   if(!drivers||!drivers.length){tb.innerHTML='<tr><td colspan="6" class="no-data">Aucun chauffeur</td></tr>';return;}
   tb.innerHTML=drivers.map(d=>`<tr>
     <td>${d.profiles?.name||'—'}</td><td>${d.profiles?.email||'—'}</td>
     <td>${d.profiles?.phone||'—'}</td><td>${d.vehicle}</td>
     <td>${badgeHtml(d.status)}</td>
-    <td><button class="btn sm secondary" onclick="showQRView('${d.qr_code}','QR — ${(d.profiles?.name||d.vehicle).replace(/'/g,'')}')">Voir QR</button></td></tr>`).join('');
+    <td><button class="btn sm secondary" onclick="showQRView('${d.qr_code}','QR ${(d.profiles?.name||d.vehicle).replace(/'/g,'')}')">Voir QR</button></td></tr>`).join('');
 }
 
-// ============ ADMIN DOCKS ============
+// ── Admin Docks ──────────────────────────────────────────────
 async function renderAdminDocks(){
-  const{data:docks}=await supabase.from('docks').select('*');
+  const{data:docks}=await db.from('docks').select('*');
   const grid=document.getElementById('docks-grid');grid.innerHTML='';
   if(!docks)return;
   for(const dk of docks){
@@ -2205,35 +1245,28 @@ async function renderAdminDocks(){
     grid.appendChild(w);generateQRInto(id,dk.qr_code,150);
   }
 }
-
 async function addDock(){
   const name=document.getElementById('new-dock-name').value.trim();
   if(!name){showToast('Entrez un nom de dock','err');return;}
   const qrCode=`DOCK:${Date.now()}:${name.replace(/\s+/g,'_')}`;
-  const{error}=await supabase.from('docks').insert([{name,qr_code:qrCode}]);
+  const{error}=await db.from('docks').insert([{name,qr_code:qrCode}]);
   if(error){showToast(error.message,'err');return;}
-  document.getElementById('new-dock-name').value='';showToast('Dock ajouté ✅');renderAdminDocks();
+  document.getElementById('new-dock-name').value='';
+  showToast('Dock ajouté ✅');renderAdminDocks();
 }
 
-// ============ ADMIN PLANNING — VERSION 2 ============
-let planningDriversCache = [];
-
+// ── Admin Planning ───────────────────────────────────────────
+let planningDriversCache=[];
 async function renderAdminPlanning(){
-  if(planningDriversCache.length === 0){
-    let{data:drivers,error:dErr}=await supabase.from('drivers').select('id,vehicle,profiles!drivers_user_id_fkey(name)');
-    if(dErr||!drivers){
-      const{data:drivers2}=await supabase.from('drivers').select('id,vehicle,user_id');
-      drivers=(drivers2||[]).map(d=>({...d,profiles:{name:d.user_id||'Chauffeur'}}));
-    }
-    planningDriversCache = drivers||[];
+  if(!planningDriversCache.length){
+    const{data:drivers}=await db.from('drivers').select('*');
+    planningDriversCache=drivers||[];
     const sel=document.getElementById('plan-driver');
     if(sel&&sel.options.length<=1){
       planningDriversCache.forEach(d=>{
         const o=document.createElement('option');
-        o.value=d.id;
-        o.textContent=(d.profiles?.name||'?')+' — '+d.vehicle;
-        o.dataset.vehicle=d.vehicle;
-        sel.appendChild(o);
+        o.value=d.id;o.textContent=(d.profiles?.name||'?')+' — '+d.vehicle;
+        o.dataset.vehicle=d.vehicle;sel.appendChild(o);
       });
       sel.addEventListener('change',()=>{
         const opt=sel.options[sel.selectedIndex];
@@ -2244,48 +1277,18 @@ async function renderAdminPlanning(){
   const dateF=document.getElementById('plan-filter-date')?.value||'';
   const shiftF=document.getElementById('plan-filter-shift')?.value||'';
   const search=(document.getElementById('plan-filter-search')?.value||'').toLowerCase();
-  let q=supabase.from('planning').select('*,drivers(vehicle,profiles!drivers_user_id_fkey(name))').order('date',{ascending:false}).order('shift',{ascending:true});
-  if(dateF) q=q.eq('date',dateF);
-  if(shiftF) q=q.eq('shift',shiftF);
-  let {data:plans, error:planErr}=await q;
-  // Fallback: if join failed, retry without drivers join
-  if(planErr || !plans){
-    console.warn('[Planning] Join error, retrying without FK join:', planErr?.message);
-    let q2=supabase.from('planning').select('*').order('date',{ascending:false}).order('shift',{ascending:true});
-    if(dateF) q2=q2.eq('date',dateF);
-    if(shiftF) q2=q2.eq('shift',shiftF);
-    const{data:plans2, error:err2}=await q2;
-    if(err2){
-      document.getElementById('admin-planning-list').innerHTML=`<div class="card"><p class="no-data" style="color:red">❌ Erreur Supabase: ${err2.message}</p></div>`;
-      return;
-    }
-    // Enrich with cached driver info
-    plans = (plans2||[]).map(p=>{
-      const d=planningDriversCache.find(x=>x.id===p.driver_id);
-      return {...p, drivers: d ? {vehicle:d.vehicle, profiles:d.profiles} : null};
-    });
-  }
+  let{data:plans}=await db.from('planning').select('*').order('date',{ascending:false});
+  if(dateF)plans=(plans||[]).filter(p=>p.date===dateF);
+  if(shiftF)plans=(plans||[]).filter(p=>p.shift===shiftF);
   let filtered=plans||[];
-  if(search) filtered=filtered.filter(p=>
-    (p.drivers?.profiles?.name||'').toLowerCase().includes(search)||
-    (p.to_depot||'').toLowerCase().includes(search)
-  );
+  if(search)filtered=filtered.filter(p=>(p.drivers?.profiles?.name||'').toLowerCase().includes(search)||(p.to_depot||'').toLowerCase().includes(search));
+
   let logsMap=new Map();
   if(filtered.length){
-    const driverIds=[...new Set(filtered.map(p=>p.driver_id))];
-    const dates=[...new Set(filtered.map(p=>p.date))];
-    const{data:logs}=await supabase.from('logs').select('*').in('driver_id',driverIds);
-    if(logs){
-      logs.forEach(log=>{
-        const logDate=log.waiting_time?.slice(0,10)||log.entry_time?.slice(0,10);
-        if(logDate&&dates.includes(logDate)){
-          const key=`${log.driver_id}_${logDate}`;
-          if(!logsMap.has(key)) logsMap.set(key,log);
-        }
-      });
-    }
+    const{data:logs}=await db.from('logs').select('*');
+    if(logs){logs.forEach(log=>{const logDate=log.waiting_time?.slice(0,10)||log.entry_time?.slice(0,10);if(logDate){const key=`${log.driver_id}_${logDate}`;if(!logsMap.has(key))logsMap.set(key,log);}});}
   }
-  console.log('[Planning] plans loaded:', (plans||[]).length, '| filtered:', filtered.length);
+
   const total=filtered.length;
   const withLog=filtered.filter(p=>logsMap.has(`${p.driver_id}_${p.date}`)).length;
   const shift1=filtered.filter(p=>p.shift==='Shift 1').length;
@@ -2295,40 +1298,20 @@ async function renderAdminPlanning(){
     <div class="stat-pill"><strong style="color:var(--green-dark)">${withLog}</strong> réalisées</div>
     <div class="stat-pill"><strong style="color:var(--green-dark)">${shift1}</strong> Shift 1</div>
     <div class="stat-pill"><strong style="color:var(--warn)">${shift2}</strong> Shift 2</div>
-    <div class="stat-pill"><strong style="color:var(--muted)">${total-withLog}</strong> planifiées</div>
-  `;
+    <div class="stat-pill"><strong style="color:var(--muted)">${total-withLog}</strong> planifiées</div>`;
+
   if(!filtered.length){
-    const msg = total===0 && !dateF && !shiftF && !search
-      ? 'Aucune mission dans la base de données. Créez une mission ci-dessus.'
-      : 'Aucune mission trouvée pour ces filtres.';
-    document.getElementById('admin-planning-list').innerHTML=`<div class="card"><p class="no-data">${msg}</p></div>`;
+    document.getElementById('admin-planning-list').innerHTML=`<div class="card"><p class="no-data">${total===0&&!dateF&&!shiftF&&!search?'Aucune mission. Créez une mission ci-dessus.':'Aucune mission trouvée pour ces filtres.'}</p></div>`;
     return;
   }
 
-  /* ---- Helpers ---- */
-  function fmtHMS(iso){
-    if(!iso) return '00:00:00';
-    const d=new Date(iso);
-    return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  }
-  function minToHMS(min){
-    if(min==null||isNaN(min)) return '00:00:00';
-    const h=Math.floor(min/60),m=min%60;
-    return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':00';
-  }
-  function shiftBadge(s){
-    if(s==='Shift 1') return `<span class="plan-shift-s1">SHIFT01</span>`;
-    return `<span class="plan-shift-s2">SHIFT02</span>`;
-  }
-  function depotBadge(dep){
-    if(!dep) return '—';
-    if(/^(USINE|USI)$/i.test(dep.trim())) return `<span class="plan-depot-usi">USI</span>`;
-    if(/^dzl$/i.test(dep.trim())) return `<span class="plan-depot-dzl">DZL</span>`;
-    return `<span style="font-size:.72rem;font-weight:700">${dep}</span>`;
-  }
+  function fmtHMS(iso){if(!iso)return'00:00:00';const d=new Date(iso);return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});}
+  function minToHMS(min){if(min==null||isNaN(min))return'00:00:00';const h=Math.floor(min/60),m=min%60;return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':00';}
+  function shiftBadge(s){return s==='Shift 1'?`<span class="plan-shift-s1">SHIFT01</span>`:`<span class="plan-shift-s2">SHIFT02</span>`;}
+  function depotBadge(dep){if(!dep)return'—';if(/^(USINE|USI)$/i.test(dep.trim()))return`<span class="plan-depot-usi">USI</span>`;if(/^dzl$/i.test(dep.trim()))return`<span class="plan-depot-dzl">DZL</span>`;return`<span style="font-size:.72rem;font-weight:700">${dep}</span>`;}
 
   let rows='';
-  filtered.forEach((p)=>{
+  filtered.forEach(p=>{
     const vehicle=p.drivers?.vehicle||p.vehicle||'—';
     const driverName=p.drivers?.profiles?.name||'—';
     const key=`${p.driver_id}_${p.date}`;
@@ -2342,131 +1325,91 @@ async function renderAdminPlanning(){
     const chargeHMS=minToHMS(log?.loading_duration);
     const attenteHMS=minToHMS(log?.wait_duration);
     const done=log?.status==='completed';
-    const toDepotDisplay=p.to_depot||'—';
     const noteDisplay=p.note||'';
-
+    const toDepotDisplay=p.to_depot||'—';
     rows+=`<tr data-id="${p.id}" style="${done?'background:rgba(39,174,96,.07)':''}">
       <td><input class="cell-edit" type="date" value="${p.date}" onchange="updatePlanField('${p.id}','date',this.value)" style="min-width:118px"></td>
-      <td style="text-align:center;position:relative">
-        ${shiftBadge(p.shift)}
-        <select style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer" onchange="updatePlanField('${p.id}','shift',this.value);renderAdminPlanning()">
-          <option value="Shift 1" ${p.shift==='Shift 1'?'selected':''}>Shift 1</option>
-          <option value="Shift 2" ${p.shift==='Shift 2'?'selected':''}>Shift 2</option>
-        </select>
-      </td>
-      <td style="text-align:center;position:relative">
-        ${depotBadge(p.from_depot)}
-        <select style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer" onchange="updatePlanField('${p.id}','from_depot',this.value);renderAdminPlanning()">
-          <option value="USINE" ${p.from_depot==='USINE'?'selected':''}>USINE</option>
-          <option value="DZL" ${p.from_depot==='DZL'?'selected':''}>DZL</option>
-        </select>
-      </td>
+      <td style="text-align:center;position:relative">${shiftBadge(p.shift)}<select style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer" onchange="updatePlanField('${p.id}','shift',this.value);renderAdminPlanning()"><option value="Shift 1" ${p.shift==='Shift 1'?'selected':''}>Shift 1</option><option value="Shift 2" ${p.shift==='Shift 2'?'selected':''}>Shift 2</option></select></td>
+      <td style="text-align:center;position:relative">${depotBadge(p.from_depot)}<select style="position:absolute;left:0;top:0;width:100%;height:100%;opacity:0;cursor:pointer" onchange="updatePlanField('${p.id}','from_depot',this.value);renderAdminPlanning()"><option value="USINE" ${p.from_depot==='USINE'?'selected':''}>USINE</option><option value="DZL" ${p.from_depot==='DZL'?'selected':''}>DZL</option></select></td>
       <td><input class="cell-edit" type="text" value="${toDepotDisplay.replace(/"/g,'&quot;')}" style="min-width:80px;font-size:.74rem;font-weight:600" onchange="updatePlanField('${p.id}','to_depot',this.value)"></td>
       <td style="text-align:center"><span class="plan-veh">${vehicle}</span></td>
-      <td style="text-align:center">
-        <select class="cell-edit" style="min-width:80px;font-size:.72rem;font-weight:700;color:var(--text)" onchange="updatePlanField('${p.id}','driver_id',this.value);renderAdminPlanning()">
-          ${planningDriversCache.map(d=>`<option value="${d.id}" ${d.id===p.driver_id?'selected':''}>${d.profiles?.name||'?'}</option>`).join('')}
-        </select>
-      </td>
+      <td style="text-align:center"><select class="cell-edit" style="min-width:80px;font-size:.72rem;font-weight:700" onchange="updatePlanField('${p.id}','driver_id',this.value);planningDriversCache=[];renderAdminPlanning()">${planningDriversCache.map(d=>`<option value="${d.id}" ${d.id===p.driver_id?'selected':''}>${d.profiles?.name||'?'}</option>`).join('')}</select></td>
       <td><input class="cell-edit" type="text" value="${noteDisplay.replace(/"/g,'&quot;')}" style="min-width:85px;font-size:.71rem" onchange="updatePlanField('${p.id}','note',this.value)"></td>
-      <td class="plan-time-cell">
-        <input class="time-input" type="time" value="${arrivalVal}" onchange="updateLogTimeField('${p.driver_id}','${p.date}','waiting_time',this.value,'${p.date}')">
-        <div class="plan-hms">${arrivalHMS}</div>
-      </td>
-      <td class="plan-time-cell">
-        <input class="time-input" type="time" value="${debVal}" onchange="updateLogTimeField('${p.driver_id}','${p.date}','entry_time',this.value,'${p.date}')">
-        <div class="plan-hms">${debHMS}</div>
-      </td>
-      <td class="plan-time-cell">
-        <input class="time-input" type="time" value="${finVal}" onchange="updateLogTimeField('${p.driver_id}','${p.date}','exit_time',this.value,'${p.date}')">
-        <div class="plan-hms">${finHMS}</div>
-      </td>
+      <td class="plan-time-cell"><input class="time-input" type="time" value="${arrivalVal}" onchange="updateLogTimeField('${p.driver_id}','${p.date}','waiting_time',this.value)"><div class="plan-hms">${arrivalHMS}</div></td>
+      <td class="plan-time-cell"><input class="time-input" type="time" value="${debVal}" onchange="updateLogTimeField('${p.driver_id}','${p.date}','entry_time',this.value)"><div class="plan-hms">${debHMS}</div></td>
+      <td class="plan-time-cell"><input class="time-input" type="time" value="${finVal}" onchange="updateLogTimeField('${p.driver_id}','${p.date}','exit_time',this.value)"><div class="plan-hms">${finHMS}</div></td>
       <td class="plan-time-cell" style="font-weight:700;color:var(--green-dark)">${chargeHMS}</td>
       <td class="plan-time-cell">${attenteHMS}</td>
       <td><div class="check-cell"><input type="checkbox" ${done?'checked':''} onchange="togglePlanDone('${p.driver_id}','${p.date}',this.checked)"></div></td>
-      <td><button class="btn sm danger" onclick="deletePlanning('${p.id}')" style="padding:.18rem .4rem;font-size:.62rem;min-width:26px;line-height:1.4">✕</button></td>
+      <td><button class="btn sm danger" onclick="deletePlanning('${p.id}')" style="padding:.18rem .4rem;font-size:.62rem;min-width:26px">✕</button></td>
     </tr>`;
   });
 
   document.getElementById('admin-planning-list').innerHTML=`
-    <div class="planning-excel-wrap">
-      <table class="planning-excel">
-        <thead><tr>
-          <th>📅 Date</th>
-          <th>⊙ SHIFT (1-2)</th>
-          <th>⊙ Du Dépôt</th>
-          <th>Au dépôt</th>
-          <th>⊙ Veh.</th>
-          <th>⊙ CHFR.</th>
-          <th>Note</th>
-          <th>⏱ Hr. D'ARRIVER<br>Camion</th>
-          <th>⊙ HEURRE DEB</th>
-          <th>⊙ HEURRE FIN</th>
-          <th>⏱ TEMPS Charge</th>
-          <th>TEMPS<br>D'attente</th>
-          <th>☑ Oui/Non</th>
-          <th></th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>`;
+    <div class="planning-excel-wrap"><table class="planning-excel">
+      <thead><tr>
+        <th>📅 Date</th><th>⊙ SHIFT</th><th>⊙ Du Dépôt</th><th>Au dépôt</th>
+        <th>Veh.</th><th>⊙ CHFR.</th><th>Note</th>
+        <th>Hr. ARRIVÉE</th><th>HEURE DEB</th><th>HEURE FIN</th>
+        <th>TEMPS Charge</th><th>TEMPS Attente</th><th>☑ Fait</th><th></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
 }
 
-async function updatePlanField(id, field, value){
-  const{error}=await supabase.from('planning').update({[field]:value}).eq('id',id);
+async function updatePlanField(id,field,value){
+  if(DEMO_MODE){
+    const p=_DS.planning.find(x=>x.id===id);
+    if(p){
+      p[field]=value;
+      if(field==='driver_id'){const d=_DS.drivers.find(x=>x.id===value);if(d)p.drivers={vehicle:d.vehicle,profiles:d.profiles};p.vehicle=p.drivers?.vehicle||'';}
+    }
+    showToast('✓ Modifié');return;
+  }
+  const{error}=await db.from('planning').update({[field]:value}).eq('id',id);
   if(error){showToast('Erreur: '+error.message,'err');return;}
   showToast('✓ Modifié');
-  if(field==='driver_id') renderAdminPlanning();
 }
 
-async function updateLogTimeField(driverId, planDate, field, timeVal, date){
-  if(!timeVal) return;
-  const fullISO = new Date(date + 'T' + timeVal + ':00').toISOString();
-  const{data:logs}=await supabase.from('logs').select('id,entry_time,waiting_time,exit_time,status')
-    .eq('driver_id',driverId)
-    .gte('waiting_time',date+'T00:00:00')
-    .lte('waiting_time',date+'T23:59:59')
-    .limit(1);
+async function updateLogTimeField(driverId,planDate,field,timeVal){
+  if(!timeVal)return;
+  const fullISO=new Date(planDate+'T'+timeVal+':00').toISOString();
+  if(DEMO_MODE){
+    const log=_DS.logs.find(l=>l.driver_id===driverId&&l.waiting_time?.startsWith(planDate));
+    if(log){
+      log[field]=fullISO;
+      if(field==='entry_time'&&log.waiting_time)log.wait_duration=Math.round((new Date(fullISO)-new Date(log.waiting_time))/60000);
+      if(field==='exit_time'&&log.entry_time)log.loading_duration=Math.round((new Date(fullISO)-new Date(log.entry_time))/60000);
+      showToast('✓ Heure mise à jour');
+      setTimeout(()=>renderAdminPlanning(),400);
+    }else showToast('Aucun log pour ce chauffeur à cette date','err');
+    return;
+  }
+  const{data:logs}=await db.from('logs').select('id,entry_time,waiting_time').eq('driver_id',driverId).gte('waiting_time',planDate+'T00:00:00').lte('waiting_time',planDate+'T23:59:59');
   if(logs&&logs.length){
     const log=logs[0];
     const update={[field]:fullISO};
-    if(field==='entry_time'&&log.waiting_time){
-      update.wait_duration=Math.round((new Date(fullISO)-new Date(log.waiting_time))/60000);
-    }
-    if(field==='exit_time'&&log.entry_time){
-      update.loading_duration=Math.round((new Date(fullISO)-new Date(log.entry_time))/60000);
-    }
-    const{error}=await supabase.from('logs').update(update).eq('id',log.id);
-    if(error){showToast('Erreur log: '+error.message,'err');return;}
-    showToast('✓ Heure mise à jour');
-    setTimeout(()=>renderAdminPlanning(),500);
-  } else {
-    showToast('Aucun log trouvé pour ce chauffeur à cette date','err');
-  }
+    if(field==='entry_time'&&log.waiting_time)update.wait_duration=Math.round((new Date(fullISO)-new Date(log.waiting_time))/60000);
+    if(field==='exit_time'&&log.entry_time)update.loading_duration=Math.round((new Date(fullISO)-new Date(log.entry_time))/60000);
+    await db.from('logs').update(update).eq('id',log.id);
+    showToast('✓ Heure mise à jour');setTimeout(()=>renderAdminPlanning(),400);
+  }else showToast('Aucun log trouvé','err');
 }
 
-async function togglePlanDone(driverId, date, checked){
-  const{data:logs}=await supabase.from('logs').select('id')
-    .eq('driver_id',driverId)
-    .gte('waiting_time',date+'T00:00:00')
-    .lte('waiting_time',date+'T23:59:59')
-    .limit(1);
-  if(logs&&logs.length){
-    const newStatus=checked?'completed':'arrived';
-    const update={status:newStatus};
-    if(checked) update.exit_time=new Date().toISOString();
-    await supabase.from('logs').update(update).eq('id',logs[0].id);
+async function togglePlanDone(driverId,date,checked){
+  if(DEMO_MODE){
+    const log=_DS.logs.find(l=>l.driver_id===driverId&&l.waiting_time?.startsWith(date));
+    if(log){log.status=checked?'completed':'arrived';if(checked)log.exit_time=new Date().toISOString();}
     showToast(checked?'✅ Marqué terminé':'↩️ Remis en cours');
-  } else {
-    showToast('Aucun log actif pour cette mission','err');
+    setTimeout(()=>renderAdminPlanning(),300);return;
   }
-}
-
-function clearPlanFilters(){
-  document.getElementById('plan-filter-date').value='';
-  document.getElementById('plan-filter-shift').value='';
-  document.getElementById('plan-filter-search').value='';
-  renderAdminPlanning();
+  const{data:logs}=await db.from('logs').select('id').eq('driver_id',driverId).gte('waiting_time',date+'T00:00:00').lte('waiting_time',date+'T23:59:59');
+  if(logs&&logs.length){
+    const update={status:checked?'completed':'arrived'};
+    if(checked)update.exit_time=new Date().toISOString();
+    await db.from('logs').update(update).eq('id',logs[0].id);
+    showToast(checked?'✅ Marqué terminé':'↩️ Remis en cours');
+  }else showToast('Aucun log actif pour cette mission','err');
 }
 
 async function createPlanning(){
@@ -2478,24 +1421,27 @@ async function createPlanning(){
   const vehicle=document.getElementById('plan-vehicle').value;
   const note=document.getElementById('plan-note').value.trim();
   if(!date||!to||!driverId){showToast('Remplissez date, destination et chauffeur','err');return;}
-  const{error}=await supabase.from('planning').insert([{date,shift,from_depot:from,to_depot:to,driver_id:driverId,vehicle,note,read_by_driver:false}]);
+  const{error}=await db.from('planning').insert([{date,shift,from_depot:from,to_depot:to,driver_id:driverId,vehicle,note,read_by_driver:false}]);
   if(error){showToast(error.message,'err');return;}
   showToast('Mission créée ✅');
-  document.getElementById('plan-date').value='';
-  document.getElementById('plan-to').value='';
-  document.getElementById('plan-note').value='';
-  document.getElementById('plan-driver').value='';
-  document.getElementById('plan-vehicle').value='';
-  renderAdminPlanning();
+  ['plan-date','plan-to','plan-note'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  document.getElementById('plan-driver').value='';document.getElementById('plan-vehicle').value='';
+  planningDriversCache=[];renderAdminPlanning();
 }
 
 async function deletePlanning(id){
   if(!confirm('Supprimer cette mission ?'))return;
-  await supabase.from('planning').delete().eq('id',id);
+  if(DEMO_MODE)_DS.planning=_DS.planning.filter(p=>p.id!==id);
+  else await db.from('planning').delete().eq('id',id);
   showToast('Mission supprimée');renderAdminPlanning();
 }
 
-// ============ QR VIEW ============
+function clearPlanFilters(){
+  ['plan-filter-date','plan-filter-shift','plan-filter-search'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderAdminPlanning();
+}
+
+// ── QR View ──────────────────────────────────────────────────
 function showQRView(qrCode,title){
   document.getElementById('qr-view-title').textContent=title;
   document.getElementById('qr-view-id').textContent=qrCode;
@@ -2504,7 +1450,7 @@ function showQRView(qrCode,title){
 }
 function closeQRView(){document.getElementById('qr-view-modal').classList.remove('open');}
 
-// ============ EVENTS ============
+// ── Events ───────────────────────────────────────────────────
 document.getElementById('scanner-modal').addEventListener('click',function(e){if(e.target===this)closeScanner();});
 document.getElementById('qr-view-modal').addEventListener('click',function(e){if(e.target===this)closeQRView();});
 document.getElementById('manual-op-modal').addEventListener('click',function(e){if(e.target===this)closeManualOpModal();});
@@ -2514,25 +1460,24 @@ if(rRole){
   rRole.dispatchEvent(new Event('change'));
 }
 
-// ============ EXPOSE GLOBALS ============
-window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;window.quickLogin=quickLogin;
-window.switchAuthTab=switchAuthTab;window.goTo=goTo;window.toggleSidebar=toggleSidebar;window.closeSidebar=closeSidebar;
-window.openOperatorScanner=openOperatorScanner;window.closeScanner=closeScanner;window.submitManualQR=submitManualQR;
-window.openManualOpModal=openManualOpModal;window.closeManualOpModal=closeManualOpModal;window.submitManualOp=submitManualOp;
-window.addDock=addDock;window.downloadQR=downloadQR;window.showQRView=showQRView;window.closeQRView=closeQRView;
-window.exportCSV=exportCSV;window.renderAdminLogs=renderAdminLogs;window.renderAdminDashboard=renderAdminDashboard;
-window.downloadDriverCard=downloadDriverCard;window.downloadQRById=downloadQRById;
-window.openDriverScanner=openDriverScanner;window.driverSubmitManual=driverSubmitManual;window.driverResetScan=driverResetScan;
-let _planningDebounceTimer=null;
-function debouncePlanning(){clearTimeout(_planningDebounceTimer);_planningDebounceTimer=setTimeout(renderAdminPlanning,400);}
-window.createPlanning=createPlanning;window.deletePlanning=deletePlanning;window.renderAdminPlanning=renderAdminPlanning;
-window.updatePlanField=updatePlanField;window.updateLogTimeField=updateLogTimeField;
-window.togglePlanDone=togglePlanDone;window.clearPlanFilters=clearPlanFilters;
+// ── Globals ──────────────────────────────────────────────────
+let _planDebounce=null;
+function debouncePlanning(){clearTimeout(_planDebounce);_planDebounce=setTimeout(renderAdminPlanning,400);}
+Object.assign(window,{
+  doLogin,doRegister,doLogout,quickLogin,switchAuthTab,
+  goTo,toggleSidebar,closeSidebar,
+  openOperatorScanner,closeScanner,submitManualQR,
+  openManualOpModal,closeManualOpModal,submitManualOp,
+  addDock,downloadQR,showQRView,closeQRView,downloadQRById,
+  exportCSV,renderAdminLogs,renderAdminDashboard,
+  downloadDriverCard,openDriverScanner,driverSubmitManual,driverResetScan,
+  createPlanning,deletePlanning,renderAdminPlanning,
+  updatePlanField,updateLogTimeField,togglePlanDone,clearPlanFilters,debouncePlanning,
+});
 
-// ============ SESSION ============
-const{data:{session}}=await supabase.auth.getSession();
+// ── Session ──────────────────────────────────────────────────
+const{data:{session}}=await db.auth.getSession();
 if(session)await loadUserData(session.user);
-supabase.auth.onAuthStateChange((_,s)=>{if(s&&!currentUser)loadUserData(s.user);});
 
 }); // end DOMContentLoaded
 </script>
